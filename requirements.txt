@@ -1,0 +1,14 @@
+# AI Interview Simulator — Dependencies
+# Install with: pip install -r requirements.txt
+
+# Text-to-Speech
+gTTS>=2.3.2
+pyttsx3>=2.90        # offline TTS fallback
+pygame>=2.5.0        # audio playback for gTTS
+
+# Speech-to-Text
+SpeechRecognition>=3.10.0
+pyaudio>=0.2.13      # microphone access (requires portaudio)
+
+# Ollama is called via subprocess — no Python client needed
+# Tkinter is part of Python stdlib (requires python3-tk on Linux)

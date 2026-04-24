@@ -1,3 +1,4 @@
+<!--static/index.html-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +7,7 @@
 <title>AI Interview Simulator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root {
     --bg: #060810;
@@ -36,7 +38,6 @@
     overflow-x: hidden;
   }
 
-  /* Background grid */
   body::before {
     content: '';
     position: fixed;
@@ -49,7 +50,6 @@
     z-index: 0;
   }
 
-  /* ── Screens ── */
   .screen {
     position: fixed;
     inset: 0;
@@ -66,7 +66,6 @@
     pointer-events: all;
   }
 
-  /* ── Welcome Screen ── */
   #welcome {
     flex-direction: column;
     padding: 40px 20px;
@@ -239,7 +238,6 @@
   .start-btn:active { transform: translateY(0); }
   .start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-  /* ── Interview Screen ── */
   #interview {
     flex-direction: column;
     padding: 0;
@@ -254,7 +252,6 @@
     width: 100%;
   }
 
-  /* Header bar */
   .int-header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
@@ -315,7 +312,6 @@
   .diff-badge.medium { color: var(--amber); border-color: rgba(247,185,79,0.3); background: rgba(247,185,79,0.08); }
   .diff-badge.hard { color: var(--red); border-color: rgba(247,111,111,0.3); background: rgba(247,111,111,0.08); }
 
-  /* Timer */
   .timer-ring {
     width: 48px;
     height: 48px;
@@ -347,7 +343,6 @@
     transform: none;
   }
 
-  /* Main interview content */
   .int-main {
     display: grid;
     grid-template-columns: 1fr 320px;
@@ -395,6 +390,38 @@
     font-weight: 600;
     line-height: 1.5;
     color: var(--text);
+  }
+
+  .tts-indicator {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .tts-indicator.speaking { display: flex; }
+  .tts-wave {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 14px;
+  }
+  .tts-wave span {
+    width: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    animation: wave 1s ease infinite;
+  }
+  .tts-wave span:nth-child(1) { animation-delay: 0s;    height: 4px; }
+  .tts-wave span:nth-child(2) { animation-delay: 0.15s; height: 10px; }
+  .tts-wave span:nth-child(3) { animation-delay: 0.3s;  height: 7px; }
+  .tts-wave span:nth-child(4) { animation-delay: 0.45s; height: 12px; }
+  .tts-wave span:nth-child(5) { animation-delay: 0.6s;  height: 5px; }
+  @keyframes wave {
+    0%, 100% { transform: scaleY(1); opacity: 1; }
+    50%       { transform: scaleY(0.4); opacity: 0.5; }
   }
 
   .answer-area {
@@ -485,7 +512,6 @@
   }
   .btn-skip:hover:not(:disabled) { border-color: var(--muted); color: var(--text); }
 
-  /* Right sidebar */
   .int-right {
     background: var(--surface);
     border-left: 1px solid var(--border);
@@ -551,7 +577,6 @@
     white-space: nowrap;
   }
 
-  /* Loading spinner */
   .spinner {
     width: 20px;
     height: 20px;
@@ -563,7 +588,6 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Bottom status bar */
   .int-footer {
     background: var(--surface);
     border-top: 1px solid var(--border);
@@ -585,7 +609,6 @@
   }
   @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-  /* ── Feedback Screen ── */
   #feedback {
     flex-direction: column;
     padding: 0;
@@ -714,7 +737,69 @@
     max-width: 400px;
   }
 
-  /* ── Report Screen ── */
+  /* ── FIX 1: Skip Notice — now requires OK button click to proceed ── */
+  #skip-notice {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(6,8,16,0.85);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  #skip-notice.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .skip-notice-box {
+    background: var(--surface);
+    border: 1px solid var(--amber);
+    border-radius: 8px;
+    padding: 36px 40px;
+    max-width: 480px;
+    text-align: center;
+    animation: slideUp 0.3s ease;
+  }
+  .skip-notice-icon {
+    font-size: 36px;
+    margin-bottom: 16px;
+  }
+  .skip-notice-title {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--amber);
+    margin-bottom: 12px;
+  }
+  .skip-notice-msg {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+  .skip-notice-msg strong {
+    color: var(--text);
+  }
+  /* OK button inside skip notice */
+  .skip-ok-btn {
+    background: var(--amber);
+    border: none;
+    border-radius: 4px;
+    color: #060810;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 12px 36px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .skip-ok-btn:hover { background: #f9c96a; transform: translateY(-1px); }
+  .skip-ok-btn:active { transform: translateY(0); }
+
   #report {
     flex-direction: column;
     padding: 0;
@@ -890,7 +975,98 @@
     justify-content: center;
   }
 
-  /* ── Loading overlay ── */
+  #save-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(6,8,16,0.88);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  #save-modal.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .save-modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 36px 40px;
+    width: 100%;
+    max-width: 420px;
+    animation: slideUp 0.3s ease;
+  }
+  .save-modal-title {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .save-modal-sub {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 28px;
+  }
+  .save-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .save-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .save-option:hover { border-color: var(--accent); }
+  .save-option.selected {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .save-option input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .save-option-info { flex: 1; }
+  .save-option-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .save-option-desc {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .save-option-icon { font-size: 22px; }
+  .save-modal-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .btn-cancel {
+    background: transparent;
+    border-color: var(--muted2);
+    color: var(--muted);
+    flex: 1;
+  }
+  .btn-cancel:hover { border-color: var(--muted); color: var(--text); }
+
   #loading-overlay {
     position: fixed;
     inset: 0;
@@ -934,7 +1110,6 @@
     80%, 100% { content: '...'; }
   }
 
-  /* ── Animations ── */
   @keyframes slideDown {
     from { opacity: 0; transform: translateY(-30px); }
     to { opacity: 1; transform: translateY(0); }
@@ -952,14 +1127,12 @@
 
   .fade-in { animation: fadeIn 0.4s ease; }
 
-  /* ── Utility ── */
   .text-green { color: var(--green); }
   .text-red { color: var(--red); }
   .text-amber { color: var(--amber); }
   .text-accent { color: var(--accent); }
   .text-purple { color: var(--purple); }
 
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -972,6 +1145,53 @@
 <div id="loading-overlay">
   <div class="loading-spinner"></div>
   <div class="loading-text loading-dots" id="loading-text">PROCESSING</div>
+</div>
+
+<!-- ── FIX 1: Skip Notice — OK button triggers navigation, no auto-advance ── -->
+<div id="skip-notice">
+  <div class="skip-notice-box">
+    <div class="skip-notice-icon">⚠️</div>
+    <div class="skip-notice-title">Question Skipped</div>
+    <div class="skip-notice-msg">
+      <strong>Always attempt every question.</strong><br><br>
+      Even a brief, partial answer demonstrates effort and gives the interviewer something to work with.
+      Silence — or skipping — leaves a negative impression that's hard to recover from.
+    </div>
+    <!-- OK button — calls skipProceed() which handles navigation -->
+    <button class="skip-ok-btn" id="skip-ok-btn" onclick="skipProceed()">OK, Got It →</button>
+  </div>
+</div>
+
+<!-- ── Save Report Modal ── -->
+<div id="save-modal">
+  <div class="save-modal-box">
+    <div class="save-modal-title">Save Report</div>
+    <div class="save-modal-sub">CHOOSE FORMAT · ONE OR BOTH</div>
+    <div class="save-options">
+      <label class="save-option" id="opt-json">
+        <input type="checkbox" id="chk-json" checked>
+        <span class="save-option-icon">📄</span>
+        <div class="save-option-info">
+          <div class="save-option-name">JSON</div>
+          <div class="save-option-desc">RAW DATA · MACHINE-READABLE · FULL DETAIL</div>
+        </div>
+      </label>
+      <label class="save-option" id="opt-pdf">
+        <input type="checkbox" id="chk-pdf">
+        <span class="save-option-icon">📋</span>
+        <div class="save-option-info">
+          <div class="save-option-name">PDF</div>
+          <div class="save-option-desc">FORMATTED REPORT · HUMAN-READABLE · SHAREABLE</div>
+        </div>
+      </label>
+    </div>
+    <div class="save-modal-actions">
+      <button class="btn btn-cancel" onclick="closeSaveModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSaveReport()" style="flex:2;">
+        Download →
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- ── SCREEN 1: Welcome ── -->
@@ -1009,9 +1229,10 @@
         </div>
       </div>
 
+      <!-- FIX 4: show 5 questions -->
       <div class="info-row">
         <div class="info-chip">
-          <span class="num">8</span>
+          <span class="num">5</span>
           <span class="lbl">Questions</span>
         </div>
         <div class="info-chip">
@@ -1035,7 +1256,6 @@
 <div class="screen" id="interview">
   <div class="interview-layout">
 
-    <!-- Header -->
     <div class="int-header">
       <div class="int-logo">AI:INTERVIEW</div>
       <div class="progress-track" id="progress-track"></div>
@@ -1051,12 +1271,17 @@
       </div>
     </div>
 
-    <!-- Main -->
     <div class="int-main">
       <div class="int-left">
         <div class="question-card fade-in" id="question-card">
-          <div class="question-label">Question <span id="q-num-label">1</span> of 8</div>
+          <div class="question-label">Question <span id="q-num-label">1</span> of 5</div>
           <div class="question-text" id="question-text">Loading question...</div>
+          <div class="tts-indicator" id="tts-indicator">
+            <div class="tts-wave">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            SPEAKING QUESTION...
+          </div>
         </div>
 
         <div class="answer-area">
@@ -1082,7 +1307,6 @@
         </div>
       </div>
 
-      <!-- Sidebar -->
       <div class="int-right">
         <div>
           <div class="sidebar-section-label">Status</div>
@@ -1107,7 +1331,6 @@
       </div>
     </div>
 
-    <!-- Footer -->
     <div class="int-footer">
       <div class="footer-dot"></div>
       <span id="footer-text">AI Interview Simulator · Ollama llama3.2 · Local Processing</span>
@@ -1175,7 +1398,7 @@
 
     <div class="report-actions">
       <button class="btn btn-primary" onclick="restartInterview()">New Interview ↺</button>
-      <button class="btn btn-record" onclick="saveReport()">Save Report 💾</button>
+      <button class="btn btn-record" onclick="openSaveModal()">Save Report 💾</button>
     </div>
   </div>
 </div>
@@ -1186,7 +1409,7 @@ const state = {
   sessionId: null,
   currentQuestion: '',
   questionNumber: 0,
-  totalQuestions: 8,
+  totalQuestions: 5,   // FIX 4: 5 questions
   interviewType: 'HR',
   difficulty: 'medium',
   pendingNext: null,
@@ -1196,6 +1419,9 @@ const state = {
   isRecording: false,
   mediaRecorder: null,
   audioChunks: [],
+  _skipResult: null,
+  _skipLoading: false,
+  _skipOkClicked: false,
 };
 
 // ── Utility ────────────────────────────────────────────────────────────────────
@@ -1235,12 +1461,61 @@ document.querySelectorAll('.type-btn').forEach(btn => {
   });
 });
 
+// ── TTS ────────────────────────────────────────────────────────────────────────
+function speakQuestion(text, onDone) {
+  window.speechSynthesis.cancel();
+
+  const indicator = document.getElementById('tts-indicator');
+
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('skip-btn').disabled = true;
+  document.getElementById('record-btn').disabled = true;
+  document.getElementById('answer-input').disabled = true;
+
+  if (!window.speechSynthesis) {
+    setStatus('TTS not supported in this browser. Read the question above.');
+    if (indicator) indicator.classList.remove('speaking');
+    if (onDone) onDone();
+    return;
+  }
+
+  if (indicator) indicator.classList.add('speaking');
+  setStatus('🔊 Listening to question...');
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.95;
+  utterance.pitch = 1.0;
+  utterance.volume = 1.0;
+
+  utterance.onend = () => {
+    if (indicator) indicator.classList.remove('speaking');
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('skip-btn').disabled = false;
+    document.getElementById('record-btn').disabled = false;
+    document.getElementById('answer-input').disabled = false;
+    if (onDone) onDone();
+  };
+
+  utterance.onerror = () => {
+    if (indicator) indicator.classList.remove('speaking');
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('skip-btn').disabled = false;
+    document.getElementById('record-btn').disabled = false;
+    document.getElementById('answer-input').disabled = false;
+    setStatus('TTS error — read the question above and type/record your answer.');
+    if (onDone) onDone();
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
 // ── Timer ──────────────────────────────────────────────────────────────────────
 function startTimer(seconds = 90) {
   clearInterval(state.timerInterval);
   state.timerSeconds = seconds;
   const circle = document.getElementById('timer-circle');
-  const circumference = 2 * Math.PI * 20; // r=20
+  const circumference = 2 * Math.PI * 20;
 
   function updateTimer() {
     const pct = state.timerSeconds / seconds;
@@ -1319,29 +1594,26 @@ async function startInterview() {
 
 // ── Display Question ───────────────────────────────────────────────────────────
 function displayQuestion(question, qNum, difficulty) {
-  // Update content
   document.getElementById('question-text').textContent = question;
   document.getElementById('q-num-label').textContent = qNum;
   document.getElementById('answer-input').value = '';
-  document.getElementById('answer-input').disabled = false;
-  document.getElementById('submit-btn').disabled = false;
-  document.getElementById('skip-btn').disabled = false;
-  document.getElementById('record-btn').disabled = false;
 
-  // Difficulty badge
+  // FIX 2: always reset record button to default state on each new question
+  resetRecordButton();
+
+  document.getElementById('answer-input').disabled = true;
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('skip-btn').disabled = true;
+  document.getElementById('record-btn').disabled = true;
+
   const badge = document.getElementById('diff-badge');
   badge.textContent = difficulty.toUpperCase();
   badge.className = 'diff-badge ' + difficulty;
 
-  // Progress
   updateProgressTrack(qNum, state.totalQuestions);
 
-  // Timer
-  startTimer(90);
+  setStatus(`🔊 Speaking question ${qNum} / ${state.totalQuestions}...`);
 
-  setStatus(`Question ${qNum} / ${state.totalQuestions} ready`);
-
-  // Add question card animation
   const card = document.getElementById('question-card');
   card.style.opacity = '0';
   card.style.transform = 'translateY(10px)';
@@ -1350,11 +1622,40 @@ function displayQuestion(question, qNum, difficulty) {
     card.style.opacity = '1';
     card.style.transform = 'translateY(0)';
   }, 50);
+
+  speakQuestion(question, () => {
+    setStatus(`Question ${qNum} / ${state.totalQuestions} — answer now`);
+    startTimer(90);
+  });
+}
+
+// ── FIX 2: helper to reset record button to its default state ─────────────────
+function resetRecordButton() {
+  // Stop any ongoing recognition first
+  if (state.isRecording) {
+    state.isRecording = false;
+    if (speechRecognition) {
+      try { speechRecognition.stop(); } catch(e) {}
+    }
+  }
+  const btn = document.getElementById('record-btn');
+  if (btn) btn.classList.remove('recording');
+  const icon = document.getElementById('record-icon');
+  if (icon) icon.textContent = '🎤';
+  const label = document.getElementById('record-label');
+  if (label) label.textContent = 'Record';
 }
 
 // ── Submit Answer ──────────────────────────────────────────────────────────────
 async function submitAnswer(auto = false) {
   stopTimer();
+  window.speechSynthesis.cancel();
+
+  // FIX 2: stop recording if active when submit is clicked
+  if (state.isRecording) {
+    stopSpeechRecognition();
+  }
+
   const answer = document.getElementById('answer-input').value.trim();
 
   document.getElementById('submit-btn').disabled = true;
@@ -1375,7 +1676,6 @@ async function submitAnswer(auto = false) {
     if (!res.ok) throw new Error('Submit failed');
     const data = await res.json();
 
-    // Store next question if available
     if (data.next_question) {
       state.pendingNext = {
         question: data.next_question,
@@ -1386,11 +1686,9 @@ async function submitAnswer(auto = false) {
       state.pendingNext = null;
     }
 
-    // Update score display
     updateScoreDisplay(data.evaluation);
     addHistoryBar(data.evaluation.overall);
 
-    // Show feedback
     hideLoading();
     showFeedback(state.currentQuestion, data.evaluation, data.feedback, data.is_last, data.question_number);
 
@@ -1405,14 +1703,107 @@ async function submitAnswer(auto = false) {
   }
 }
 
-async function skipQuestion() {
-  document.getElementById('answer-input').value = '';
-  await submitAnswer();
+// ── Skip Question — show notice immediately, fire API in background ───────────
+function skipQuestion() {
+  stopTimer();
+  window.speechSynthesis.cancel();
+
+  if (state.isRecording) {
+    stopSpeechRecognition();
+  }
+
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('skip-btn').disabled = true;
+  document.getElementById('record-btn').disabled = true;
+  document.getElementById('answer-input').disabled = true;
+
+  // Show the notice right away — OK button is active immediately
+  const notice = document.getElementById('skip-notice');
+  const okBtn  = document.getElementById('skip-ok-btn');
+  okBtn.disabled = false;
+  okBtn.textContent = 'OK, Got It →';
+  notice.classList.add('active');
+
+  // Mark that the API result is not yet ready
+  state._skipResult = null;
+  state._skipLoading = true;
+
+  // Fire API call in background — don't await here
+  fetch('/api/skip', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: state.sessionId }),
+  })
+    .then(res => { if (!res.ok) throw new Error('Skip failed'); return res.json(); })
+    .then(data => {
+      state._skipResult = data;
+      state._skipLoading = false;
+      if (data.next_question) {
+        state.pendingNext = {
+          question: data.next_question,
+          number: data.next_question_number,
+          difficulty: data.next_difficulty,
+        };
+      } else {
+        state.pendingNext = null;
+      }
+      addHistoryBar(0);
+      // If user already clicked OK while API was loading, proceed now
+      if (state._skipOkClicked) {
+        state._skipOkClicked = false;
+        _doSkipProceed(data);
+      }
+    })
+    .catch(err => {
+      state._skipLoading = false;
+      notice.classList.remove('active');
+      state._skipResult = null;
+      setStatus('Error: ' + err.message);
+      document.getElementById('submit-btn').disabled = false;
+      document.getElementById('skip-btn').disabled = false;
+      document.getElementById('record-btn').disabled = false;
+      document.getElementById('answer-input').disabled = false;
+      startTimer(state.timerSeconds);
+    });
+}
+
+// Called when user clicks OK on the skip notice
+function skipProceed() {
+  // If API still loading, mark the click and wait — _doSkipProceed called automatically when ready
+  if (state._skipLoading) {
+    const okBtn = document.getElementById('skip-ok-btn');
+    okBtn.disabled = true;
+    okBtn.textContent = 'Loading...';
+    state._skipOkClicked = true;
+    return;
+  }
+  const data = state._skipResult;
+  state._skipResult = null;
+  if (!data) return;
+  _doSkipProceed(data);
+}
+
+function _doSkipProceed(data) {
+  const notice = document.getElementById('skip-notice');
+  notice.classList.remove('active');
+  // reset OK button for next time
+  const okBtn = document.getElementById('skip-ok-btn');
+  okBtn.disabled = false;
+  okBtn.textContent = 'OK, Got It →';
+
+  if (!data.is_last && state.pendingNext) {
+    state.currentQuestion = state.pendingNext.question;
+    state.questionNumber  = state.pendingNext.number;
+    state.difficulty      = state.pendingNext.difficulty;
+    state.pendingNext     = null;
+    displayQuestion(state.currentQuestion, state.questionNumber, state.difficulty);
+  } else {
+    fetchReport();
+  }
 }
 
 // ── Show Feedback ──────────────────────────────────────────────────────────────
 function showFeedback(question, evaluation, feedback, isLast, qNum) {
-  // Score badges
   const badgeContainer = document.getElementById('fb-score-badges');
   badgeContainer.innerHTML = '';
   const dims = [
@@ -1429,14 +1820,12 @@ function showFeedback(question, evaluation, feedback, isLast, qNum) {
     badgeContainer.appendChild(b);
   });
 
-  // Panels
   document.getElementById('fb-strengths').textContent = feedback.strengths || '–';
   document.getElementById('fb-weaknesses').textContent = feedback.weaknesses || '–';
   document.getElementById('fb-suggestions').textContent = feedback.suggestions || '–';
   document.getElementById('fb-improved').textContent = feedback.improved_answer || '–';
   document.getElementById('fb-explanation').textContent = evaluation.explanation || '';
 
-  // Continue button text
   const continueBtn = document.getElementById('continue-btn');
   if (isLast) {
     continueBtn.textContent = 'View Final Report 🏆';
@@ -1451,7 +1840,6 @@ function showFeedback(question, evaluation, feedback, isLast, qNum) {
 // ── Continue Interview ─────────────────────────────────────────────────────────
 function continueInterview() {
   if (!state.pendingNext) {
-    // Last question — get report
     fetchReport();
   } else {
     state.currentQuestion = state.pendingNext.question;
@@ -1483,16 +1871,13 @@ async function fetchReport() {
 function displayReport(report) {
   const avg = report.average_scores;
 
-  // Tier
   document.getElementById('rpt-tier').textContent = report.performance_tier;
   document.getElementById('rpt-tier-msg').textContent = report.tier_message;
 
-  // Color tier
   const tier = document.getElementById('rpt-tier');
   const overall = avg.overall;
   tier.style.color = overall >= 8 ? 'var(--green)' : overall >= 6 ? 'var(--accent)' : overall >= 4 ? 'var(--amber)' : 'var(--red)';
 
-  // Avg score cards
   const grid = document.getElementById('avg-scores-grid');
   grid.innerHTML = '';
   [['Clarity', avg.clarity], ['Relevance', avg.relevance], ['Depth', avg.depth], ['Structure', avg.structure], ['Overall', avg.overall]].forEach(([lbl, val]) => {
@@ -1502,7 +1887,6 @@ function displayReport(report) {
     grid.appendChild(c);
   });
 
-  // Trend bars
   const trendContainer = document.getElementById('trend-bars');
   trendContainer.innerHTML = '';
   const maxScore = 10;
@@ -1510,16 +1894,15 @@ function displayReport(report) {
     const bar = document.createElement('div');
     bar.className = 'trend-bar';
     const pct = (score / maxScore) * 100;
-    bar.style.height = pct + '%';
-    bar.style.background = scoreColor(score);
-    bar.innerHTML = `<span class="tb-val">${score}</span><span class="tb-label">Q${i + 1}</span>`;
+    bar.style.height = Math.max(2, pct) + '%';
+    // FIX 5: skipped questions (score === 0) shown in muted colour to visually flag them
+    bar.style.background = score === 0 ? 'var(--muted2)' : scoreColor(score);
+    bar.innerHTML = `<span class="tb-val" style="color:${score === 0 ? 'var(--muted)' : 'var(--text)'}">${score === 0 ? 'skip' : score}</span><span class="tb-label">Q${i + 1}</span>`;
     trendContainer.appendChild(bar);
   });
 
-  // AI summary
   document.getElementById('rpt-summary').textContent = report.ai_summary || 'No summary available.';
 
-  // Detail panels
   const detailGrid = document.getElementById('detail-grid');
   detailGrid.innerHTML = '';
 
@@ -1565,68 +1948,12 @@ function addHistoryBar(score) {
   bar.className = 'h-bar';
   const pct = Math.max(4, (score / 10) * 60);
   bar.style.height = pct + 'px';
-  bar.style.background = scoreColor(score);
-  bar.innerHTML = `<span class="h-score">${score}</span>`;
+  bar.style.background = score === 0 ? 'var(--muted2)' : scoreColor(score);
+  bar.innerHTML = `<span class="h-score">${score === 0 ? 'skip' : score}</span>`;
   container.appendChild(bar);
 }
 
 // ── Voice Recording ────────────────────────────────────────────────────────────
-async function toggleRecording() {
-  if (state.isRecording) {
-    stopRecording();
-  } else {
-    await startRecording();
-  }
-}
-
-async function startRecording() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    state.audioChunks = [];
-    state.mediaRecorder = new MediaRecorder(stream);
-
-    state.mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) state.audioChunks.push(e.data);
-    };
-
-    state.mediaRecorder.onstop = async () => {
-      const blob = new Blob(state.audioChunks, { type: 'audio/webm' });
-      stream.getTracks().forEach(t => t.stop());
-      await transcribeAudio(blob);
-    };
-
-    state.mediaRecorder.start();
-    state.isRecording = true;
-
-    document.getElementById('record-btn').classList.add('recording');
-    document.getElementById('record-icon').textContent = '⏹';
-    document.getElementById('record-label').textContent = 'Stop';
-    setStatus('🎤 Recording... click Stop when done.');
-
-  } catch (err) {
-    setStatus('Microphone error: ' + err.message + '. Use text mode.');
-  }
-}
-
-function stopRecording() {
-  if (state.mediaRecorder && state.isRecording) {
-    state.mediaRecorder.stop();
-    state.isRecording = false;
-    document.getElementById('record-btn').classList.remove('recording');
-    document.getElementById('record-icon').textContent = '🎤';
-    document.getElementById('record-label').textContent = 'Record';
-    setStatus('Processing audio...');
-  }
-}
-
-async function transcribeAudio(blob) {
-  // Use Web Speech API for transcription (browser-native, no API key needed)
-  // Since we can't send audio to Ollama, we use browser SpeechRecognition
-  setStatus('Transcription complete. Review and submit your answer.');
-  // Note: actual transcription happens via browser API below
-}
-
-// Browser-native speech recognition (continuous mode)
 let speechRecognition = null;
 
 function initSpeechRecognition() {
@@ -1694,7 +2021,6 @@ function stopSpeechRecognition() {
   setStatus('Recording stopped. Submit your answer.');
 }
 
-// Override toggleRecording to use Web Speech API
 async function toggleRecording() {
   if (state.isRecording) {
     stopSpeechRecognition();
@@ -1703,13 +2029,242 @@ async function toggleRecording() {
   }
 }
 
+// ── Save Report Modal ──────────────────────────────────────────────────────────
+['chk-json', 'chk-pdf'].forEach(id => {
+  document.getElementById(id).addEventListener('change', function() {
+    this.closest('.save-option').classList.toggle('selected', this.checked);
+  });
+});
+document.getElementById('opt-json').classList.add('selected');
+
+function openSaveModal() {
+  if (!state.report) return;
+  document.getElementById('save-modal').classList.add('active');
+}
+
+function closeSaveModal() {
+  document.getElementById('save-modal').classList.remove('active');
+}
+
+function confirmSaveReport() {
+  const wantJson = document.getElementById('chk-json').checked;
+  const wantPdf  = document.getElementById('chk-pdf').checked;
+
+  if (!wantJson && !wantPdf) {
+    alert('Please select at least one format.');
+    return;
+  }
+
+  closeSaveModal();
+
+  if (wantJson) saveReportJSON();
+  if (wantPdf)  saveReportPDF();
+}
+
+function saveReportJSON() {
+  const blob = new Blob([JSON.stringify(state.report, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `interview_report_${timestamp()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── PDF download — true .pdf file via jsPDF ───────────────────────────────────
+function saveReportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const report = state.report;
+  const avg    = report.average_scores;
+  const ts     = new Date().toLocaleString();
+  const PW     = doc.internal.pageSize.getWidth();   // 595
+  const PH     = doc.internal.pageSize.getHeight();  // 842
+  const ML     = 48, MR = 48, TW = PW - ML - MR;
+  let y = 48;
+
+  // ── helpers ──
+  function checkPage(needed = 20) {
+    if (y + needed > PH - 40) { doc.addPage(); y = 48; }
+  }
+  function hline(col = '#1e2640') {
+    doc.setDrawColor(col);
+    doc.setLineWidth(0.5);
+    doc.line(ML, y, PW - MR, y);
+    y += 8;
+  }
+  function sectionTitle(txt) {
+    checkPage(28);
+    hline('#cccccc');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor('#888888');
+    doc.text(txt.toUpperCase(), ML, y);
+    y += 14;
+  }
+  function bodyText(txt, color = '#222222', size = 10, maxW = TW) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(size);
+    doc.setTextColor(color);
+    const lines = doc.splitTextToSize(txt, maxW);
+    lines.forEach(line => {
+      checkPage(14);
+      doc.text(line, ML, y);
+      y += 13;
+    });
+  }
+  function scoreChip(label, val, x, w) {
+    const col = val >= 8 ? '#2dd4a0' : val >= 5 ? '#f7b94f' : '#f76f6f';
+    doc.setFillColor('#f5f7ff');
+    doc.roundedRect(x, y, w, 44, 4, 4, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor(col);
+    doc.text(String(val), x + w / 2, y + 24, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor('#888888');
+    doc.text(label.toUpperCase(), x + w / 2, y + 38, { align: 'center' });
+  }
+
+  // ── Title block ──
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.setTextColor('#0d1120');
+  doc.text('Interview Report', ML, y);
+  y += 18;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor('#888888');
+  doc.text(`Role: ${report.role}  ·  Type: ${report.interview_type}  ·  ${ts}`, ML, y);
+  y += 20;
+
+  // ── Tier ──
+  const tierCol = avg.overall >= 8 ? '#2dd4a0' : avg.overall >= 6 ? '#4f8ef7' : avg.overall >= 4 ? '#f7b94f' : '#f76f6f';
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(tierCol);
+  doc.text(report.performance_tier, ML, y);
+  y += 14;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor('#666666');
+  doc.text(report.tier_message, ML, y);
+  y += 22;
+
+  // ── Average scores ──
+  sectionTitle('Average Scores');
+  const chipW = (TW - 8 * 4) / 5;
+  [['Clarity', avg.clarity], ['Relevance', avg.relevance], ['Depth', avg.depth], ['Structure', avg.structure], ['Overall', avg.overall]]
+    .forEach(([lbl, val], i) => scoreChip(lbl, val, ML + i * (chipW + 8), chipW));
+  y += 52;
+
+  // ── AI Assessment ──
+  sectionTitle('AI Assessment');
+  doc.setFillColor('#f7faff');
+  const summaryLines = doc.splitTextToSize(report.ai_summary || 'N/A', TW - 16);
+  const summaryH = summaryLines.length * 13 + 16;
+  checkPage(summaryH + 10);
+  doc.roundedRect(ML, y, TW, summaryH, 4, 4, 'F');
+  doc.setDrawColor('#4f8ef7');
+  doc.setLineWidth(1);
+  doc.roundedRect(ML, y, TW, summaryH, 4, 4, 'S');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor('#222222');
+  summaryLines.forEach((line, li) => { doc.text(line, ML + 8, y + 12 + li * 13); });
+  y += summaryH + 14;
+
+  // ── Question-by-question ──
+  sectionTitle('Question-by-Question');
+  (report.qa_records || []).forEach((r, i) => {
+    const skipped = !r.answer;
+    const ev = r.evaluation;
+    checkPage(60);
+    // question header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor('#1a2040');
+    const qLabel = `Q${i + 1}: `;
+    const qText  = doc.splitTextToSize(qLabel + r.question, TW);
+    qText.forEach(line => { checkPage(14); doc.text(line, ML, y); y += 13; });
+    if (skipped) {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor('#f7b94f');
+      checkPage(14);
+      doc.text('[SKIPPED — no answer provided]', ML + 8, y);
+      y += 14;
+    } else {
+      // answer
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor('#444444');
+      const aLines = doc.splitTextToSize(r.answer, TW - 8);
+      aLines.forEach(line => { checkPage(13); doc.text(line, ML + 8, y); y += 12; });
+      // scores inline
+      checkPage(14);
+      doc.setFontSize(8);
+      doc.setTextColor('#888888');
+      doc.text(
+        `Clarity: ${ev.clarity}  Relevance: ${ev.relevance}  Depth: ${ev.depth}  Structure: ${ev.structure}  Overall: ${ev.overall}`,
+        ML + 8, y
+      );
+      y += 14;
+    }
+    y += 4;
+    hline('#eeeeee');
+  });
+
+  // ── Strengths / Weaknesses / Suggestions ──
+  [
+    ['Overall Strengths', report.overall_strengths, '#2dd4a0'],
+    ['Areas to Improve',  report.overall_weaknesses, '#f76f6f'],
+    ['Suggestions',       report.overall_suggestions, '#f7b94f'],
+  ].forEach(([heading, items, col]) => {
+    sectionTitle(heading);
+    (items || []).forEach((item, i) => {
+      if (!item) return;
+      checkPage(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(col);
+      doc.text(`Q${i + 1}:`, ML, y);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor('#333333');
+      const iLines = doc.splitTextToSize(item, TW - 24);
+      iLines.forEach((line, li) => {
+        checkPage(13);
+        doc.text(line, ML + 24, y);
+        y += 13;
+      });
+    });
+    y += 6;
+  });
+
+  doc.save(`interview_report_${timestamp()}.pdf`);
+}
+
+function timestamp() {
+  return new Date().toISOString().slice(0,19).replace(/:/g,'-');
+}
+
 // ── Restart ────────────────────────────────────────────────────────────────────
 function restartInterview() {
+  window.speechSynthesis.cancel();
+  // FIX 2: ensure recording is stopped on restart too
+  if (state.isRecording) {
+    state.isRecording = false;
+    if (speechRecognition) { try { speechRecognition.stop(); } catch(e) {} }
+  }
   state.sessionId = null;
   state.currentQuestion = '';
   state.questionNumber = 0;
   state.pendingNext = null;
   state.report = null;
+  state._skipResult = null;
+  state._skipLoading = false;
+  state._skipOkClicked = false;
   stopTimer();
 
   document.getElementById('history-bars').innerHTML = '';
@@ -1719,17 +2274,6 @@ function restartInterview() {
   });
   document.getElementById('start-btn').disabled = false;
   showScreen('welcome');
-}
-
-function saveReport() {
-  if (!state.report) return;
-  const blob = new Blob([JSON.stringify(state.report, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `interview_report_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 </script>
 </body>

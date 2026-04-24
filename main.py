@@ -8,8 +8,9 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
 import uuid
-import json
+import asyncio
 from datetime import datetime
+from functools import partial
 
 from agents.interviewer_agent import generate_question
 from agents.evaluator_agent import evaluate_answer
@@ -22,7 +23,8 @@ app = FastAPI(title="AI Interview Simulator")
 # In-memory session store
 sessions: dict[str, InterviewSession] = {}
 
-TOTAL_QUESTIONS = 8
+# FIX 4: 5 questions instead of 8
+TOTAL_QUESTIONS = 5
 
 # ── Models ─────────────────────────────────────────────────────────────────────
 
@@ -33,6 +35,9 @@ class StartRequest(BaseModel):
 class SubmitAnswerRequest(BaseModel):
     session_id: str
     answer: str
+
+class SkipQuestionRequest(BaseModel):
+    session_id: str
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
 
@@ -95,6 +100,57 @@ async def submit_answer(req: SubmitAnswerRequest):
 
     if not is_last:
         # Generate next question
+        next_q = generate_question(
+            role=session.role,
+            difficulty=session.current_difficulty,
+            interview_type=session.interview_type,
+            previous_topics=session.questions_asked[-5:],
+            question_number=session.question_number + 1,
+        )
+        session.current_question = next_q
+        session.question_number += 1
+        result["next_question"] = next_q
+        result["next_question_number"] = session.question_number
+        result["next_difficulty"] = session.current_difficulty
+
+    return result
+
+
+@app.post("/api/skip")
+async def skip_question(req: SkipQuestionRequest):
+    """Skip current question without evaluation — record it as skipped and move on."""
+    session = sessions.get(req.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    question = session.current_question
+
+    # FIX 5: skipped questions get 0 scores — they already drag down averages,
+    # but we also flag them so the report can weigh them appropriately.
+    skipped_evaluation = {
+        "clarity": 0, "relevance": 0, "depth": 0, "structure": 0, "overall": 0.0,
+        "explanation": "Question was skipped.",
+        "raw_response": "",
+        "skipped": True,
+    }
+    skipped_feedback = {
+        "strengths": "N/A — question was skipped.",
+        "weaknesses": "Always attempt every question; even a partial answer scores better than silence.",
+        "suggestions": "Try to answer every question. Interviewers notice when candidates skip. A brief, honest attempt is always better than no response.",
+        "improved_answer": "N/A",
+        "raw_response": "",
+    }
+    session.add_record(question, "", skipped_evaluation, skipped_feedback)
+
+    is_last = session.question_number >= TOTAL_QUESTIONS
+
+    result = {
+        "question_number": session.question_number,
+        "is_last": is_last,
+        "skipped": True,
+    }
+
+    if not is_last:
         next_q = generate_question(
             role=session.role,
             difficulty=session.current_difficulty,

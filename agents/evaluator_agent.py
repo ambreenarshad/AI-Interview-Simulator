@@ -1,91 +1,62 @@
 """
-evaluator_agent.py — Evaluator Agent
-Evaluates candidate answers on four dimensions using Ollama.
-Returns structured scores with explanations.
+evaluator_agent.py — Scores answers on 4 dimensions with stable output format
 """
 
 import re
 from utils.llm import query_ollama
 
-
-SYSTEM_PROMPT = """You are an expert interview evaluator. You assess candidate answers 
-objectively and fairly, providing constructive numeric scores and brief explanations. 
-You always respond in the exact structured format requested."""
+SYSTEM_PROMPT = """You are a strict interview evaluator. You always respond in the EXACT format requested.
+Never add extra text, explanations outside the format, or commentary."""
 
 
 def evaluate_answer(question: str, answer: str) -> dict:
-    """
-    Evaluate a candidate's answer on four dimensions.
-
-    Returns a dict with:
-        - clarity (int 1-10)
-        - relevance (int 1-10)
-        - depth (int 1-10)
-        - structure (int 1-10)
-        - overall (float, average of the four)
-        - explanation (str)
-        - raw_response (str, for debugging)
-    """
     if not answer or answer.strip() == "":
         return _empty_answer_result()
 
-    prompt = f"""Evaluate the following interview answer.
+    prompt = f"""Evaluate this interview answer strictly.
 
 QUESTION: {question}
 
-CANDIDATE'S ANSWER: {answer}
+ANSWER: {answer}
 
-Score the answer on these FOUR criteria (each 1–10):
+Score each dimension 1-10. Respond in EXACTLY this format with no deviations:
 
-1. Clarity (1–10): Is the answer clear and easy to understand?
-2. Relevance (1–10): Does it directly address the question asked?
-3. Depth (1–10): Is it detailed and substantive, not vague or superficial?
-4. Structure (1–10): Is it well-organized? (STAR method preferred: Situation, Task, Action, Result)
+CLARITY: [number]
+RELEVANCE: [number]
+DEPTH: [number]
+STRUCTURE: [number]
+EXPLANATION: [2-3 sentences about what was done well and what was lacking]
 
-Respond in EXACTLY this format (no extra text before or after):
-
-Clarity: X/10
-Relevance: X/10
-Depth: X/10
-Structure: X/10
-Overall: X/10
-Explanation: <2–4 sentences explaining the scores and what the candidate did well or poorly>"""
+Only output those 5 lines. Nothing else."""
 
     raw = query_ollama(prompt, SYSTEM_PROMPT)
-    return _parse_evaluation(raw, question, answer)
+    return _parse_evaluation(raw)
 
 
-def _parse_evaluation(raw: str, question: str, answer: str) -> dict:
-    """Parse structured evaluation output from LLM."""
+def _parse_evaluation(raw: str) -> dict:
     result = {
-        "clarity": 5,
-        "relevance": 5,
-        "depth": 5,
-        "structure": 5,
-        "overall": 5.0,
-        "explanation": "Evaluation could not be fully parsed.",
+        "clarity": 5, "relevance": 5, "depth": 5, "structure": 5,
+        "overall": 5.0, "explanation": "Evaluation could not be fully parsed.",
         "raw_response": raw,
     }
 
-    # Extract scores using regex — handles formats like "7/10", "7", "7.5"
-    def extract_score(label: str) -> int:
-        pattern = rf"{label}[:\s]+(\d+(?:\.\d+)?)\s*/?\s*10"
-        match = re.search(pattern, raw, re.IGNORECASE)
+    def extract(label: str) -> int:
+        # Match "LABEL: 7" or "LABEL: 7/10" or "**LABEL**: 7"
+        pattern = rf"(?:^|\n)\s*\**{label}\**[:\s]+(\d+(?:\.\d+)?)"
+        match = re.search(pattern, raw, re.IGNORECASE | re.MULTILINE)
         if match:
             return min(10, max(1, round(float(match.group(1)))))
-        return 5  # default if not found
+        return 5
 
-    result["clarity"] = extract_score("Clarity")
-    result["relevance"] = extract_score("Relevance")
-    result["depth"] = extract_score("Depth")
-    result["structure"] = extract_score("Structure")
+    result["clarity"] = extract("CLARITY")
+    result["relevance"] = extract("RELEVANCE")
+    result["depth"] = extract("DEPTH")
+    result["structure"] = extract("STRUCTURE")
 
-    # Extract explanation
-    exp_match = re.search(r"Explanation[:\s]+(.+?)$", raw, re.IGNORECASE | re.DOTALL)
+    exp_match = re.search(r"EXPLANATION[:\s]+(.+?)$", raw, re.IGNORECASE | re.DOTALL)
     if exp_match:
         result["explanation"] = exp_match.group(1).strip()
 
-    # Compute overall average
     scores = [result["clarity"], result["relevance"], result["depth"], result["structure"]]
     result["overall"] = round(sum(scores) / len(scores), 2)
 
@@ -93,13 +64,8 @@ def _parse_evaluation(raw: str, question: str, answer: str) -> dict:
 
 
 def _empty_answer_result() -> dict:
-    """Return a default result for empty/no answer."""
     return {
-        "clarity": 1,
-        "relevance": 1,
-        "depth": 1,
-        "structure": 1,
-        "overall": 1.0,
-        "explanation": "No answer was provided. The candidate did not respond to this question.",
+        "clarity": 1, "relevance": 1, "depth": 1, "structure": 1, "overall": 1.0,
+        "explanation": "No answer was provided.",
         "raw_response": "",
     }

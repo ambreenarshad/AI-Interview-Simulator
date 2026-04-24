@@ -1,104 +1,71 @@
 """
-feedback_agent.py — Feedback Agent
-Generates rich, actionable feedback for each interview answer.
-Includes strengths, weaknesses, improvement suggestions, and a model answer.
+feedback_agent.py — Generates actionable feedback for each answer
 """
 
+import re
 from utils.llm import query_ollama
 
-
-SYSTEM_PROMPT = """You are a supportive but honest interview coach with expertise in helping
-candidates improve their interview performance. You provide specific, actionable feedback
-and always frame criticism constructively."""
+SYSTEM_PROMPT = """You are a professional interview coach. You give specific, actionable feedback.
+Always respond in the EXACT format requested — no extra text."""
 
 
 def generate_feedback(question: str, answer: str, evaluation: dict) -> dict:
-    """
-    Generate detailed feedback for a candidate's answer.
-
-    Args:
-        question: The interview question asked
-        answer: The candidate's answer
-        evaluation: The evaluation dict from evaluator_agent
-
-    Returns:
-        dict with keys:
-            - strengths (str)
-            - weaknesses (str)
-            - suggestions (str)
-            - improved_answer (str)
-            - raw_response (str)
-    """
     if not answer or answer.strip() == "":
         return {
-            "strengths": "N/A — No answer was provided.",
-            "weaknesses": "The candidate did not attempt to answer this question.",
-            "suggestions": "Always attempt to answer, even if uncertain. A partial answer is better than silence.",
-            "improved_answer": "I would approach this question by first thinking about relevant examples from my experience, then structuring my answer using the STAR method (Situation, Task, Action, Result).",
+            "strengths": "No answer was provided.",
+            "weaknesses": "The question was not attempted.",
+            "suggestions": "Always attempt an answer. A partial answer is better than silence.",
+            "improved_answer": "Structure your answer using STAR: Situation, Task, Action, Result.",
             "raw_response": "",
         }
 
     scores_text = (
-        f"Clarity: {evaluation['clarity']}/10, "
-        f"Relevance: {evaluation['relevance']}/10, "
-        f"Depth: {evaluation['depth']}/10, "
-        f"Structure: {evaluation['structure']}/10"
+        f"Clarity {evaluation['clarity']}/10, Relevance {evaluation['relevance']}/10, "
+        f"Depth {evaluation['depth']}/10, Structure {evaluation['structure']}/10"
     )
 
-    prompt = f"""You are reviewing a candidate's interview answer.
+    prompt = f"""Review this interview answer and give feedback.
 
 QUESTION: {question}
+ANSWER: {answer}
+SCORES: {scores_text}
 
-CANDIDATE'S ANSWER: {answer}
+Respond in EXACTLY this format:
 
-EVALUATION SCORES: {scores_text}
-EVALUATOR'S NOTES: {evaluation.get('explanation', 'N/A')}
+STRENGTHS: [2-3 specific things done well]
+WEAKNESSES: [2-3 specific things that were lacking]
+SUGGESTIONS: [2-3 concrete actionable tips]
+IMPROVED ANSWER: [A better 3-5 sentence version using STAR method]
 
-Provide feedback in EXACTLY this format:
-
-STRENGTHS: <What the candidate did well — be specific, 2–3 points>
-WEAKNESSES: <What was missing or could be better — be specific, 2–3 points>
-SUGGESTIONS: <Concrete, actionable tips to improve this answer, 2–3 points>
-IMPROVED ANSWER: <A concise, better version of the candidate's answer using the STAR method where applicable, 3–5 sentences>"""
+Only output those 4 labeled sections. Nothing else."""
 
     raw = query_ollama(prompt, SYSTEM_PROMPT)
     return _parse_feedback(raw)
 
 
 def _parse_feedback(raw: str) -> dict:
-    """Parse structured feedback from LLM response."""
-    import re
-
     result = {
-        "strengths": "Good attempt at answering the question.",
-        "weaknesses": "Could provide more specific examples.",
-        "suggestions": "Try using the STAR method for structured answers.",
+        "strengths": "Good attempt.",
+        "weaknesses": "Could be more specific.",
+        "suggestions": "Try using the STAR method.",
         "improved_answer": "Not available.",
         "raw_response": raw,
     }
 
-    def extract_section(label: str, next_labels: list[str]) -> str:
-        """Extract text under a section label until the next label."""
-        # Build pattern for "LABEL: content"
-        next_pattern = "|".join(re.escape(l) for l in next_labels)
-        pattern = rf"{re.escape(label)}[:\s]+(.+?)(?=(?:{next_pattern})[:\s]|$)"
+    def extract(label: str, stop_labels: list[str]) -> str:
+        stop = "|".join(re.escape(l) for l in stop_labels)
+        pattern = rf"(?:^|\n)\s*{re.escape(label)}[:\s]+(.+?)(?=(?:\n\s*(?:{stop})[:\s])|$)"
         match = re.search(pattern, raw, re.IGNORECASE | re.DOTALL)
-        if match:
-            return match.group(1).strip()
-        return ""
+        return match.group(1).strip() if match else ""
 
-    s = extract_section("STRENGTHS", ["WEAKNESSES", "SUGGESTIONS", "IMPROVED ANSWER"])
-    w = extract_section("WEAKNESSES", ["SUGGESTIONS", "IMPROVED ANSWER"])
-    sug = extract_section("SUGGESTIONS", ["IMPROVED ANSWER"])
-    imp = extract_section("IMPROVED ANSWER", [])
+    s = extract("STRENGTHS", ["WEAKNESSES", "SUGGESTIONS", "IMPROVED ANSWER"])
+    w = extract("WEAKNESSES", ["SUGGESTIONS", "IMPROVED ANSWER"])
+    sug = extract("SUGGESTIONS", ["IMPROVED ANSWER"])
+    imp = extract("IMPROVED ANSWER", [])
 
-    if s:
-        result["strengths"] = s
-    if w:
-        result["weaknesses"] = w
-    if sug:
-        result["suggestions"] = sug
-    if imp:
-        result["improved_answer"] = imp
+    if s: result["strengths"] = s
+    if w: result["weaknesses"] = w
+    if sug: result["suggestions"] = sug
+    if imp: result["improved_answer"] = imp
 
     return result

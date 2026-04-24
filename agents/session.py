@@ -1,23 +1,12 @@
 """
 session.py — Session Manager and Difficulty Adapter
-Manages interview session state, scoring history, and adaptive difficulty logic.
 """
 
 import json
 from datetime import datetime
 
 
-# ─── Difficulty Adapter ────────────────────────────────────────────────────────
-
 def adapt_difficulty(current_score: float) -> str:
-    """
-    Adapt question difficulty based on the candidate's last overall score.
-
-    Rules:
-        score > 7  → hard
-        score < 4  → easy
-        else       → medium
-    """
     if current_score > 7:
         return "hard"
     elif current_score < 4:
@@ -26,38 +15,20 @@ def adapt_difficulty(current_score: float) -> str:
         return "medium"
 
 
-# ─── Session Manager ──────────────────────────────────────────────────────────
-
 class InterviewSession:
-    """Holds all data for a single interview session."""
-
     def __init__(self, role: str, interview_type: str):
         self.role = role
         self.interview_type = interview_type
         self.start_time = datetime.now().isoformat()
         self.end_time = None
-
-        self.current_difficulty = "medium"  # start at medium
+        self.current_difficulty = "medium"
         self.question_number = 0
+        self.current_question = ""
         self.questions_asked: list[str] = []
-        self.topics_covered: list[str] = []
-
-        # Each entry: {question, answer, evaluation, feedback}
         self.qa_records: list[dict] = []
 
-    # ── Recording ─────────────────────────────────────────────────────────────
-
-    def add_record(
-        self,
-        question: str,
-        answer: str,
-        evaluation: dict,
-        feedback: dict,
-    ):
-        """Record a completed Q&A exchange with evaluation and feedback."""
-        self.question_number += 1
+    def add_record(self, question: str, answer: str, evaluation: dict, feedback: dict):
         self.questions_asked.append(question)
-
         record = {
             "question_number": self.question_number,
             "difficulty": self.current_difficulty,
@@ -67,45 +38,31 @@ class InterviewSession:
             "feedback": feedback,
         }
         self.qa_records.append(record)
-
-        # Update difficulty for next question
         self.current_difficulty = adapt_difficulty(evaluation.get("overall", 5.0))
 
-    # ── Aggregated Statistics ─────────────────────────────────────────────────
-
     def get_average_scores(self) -> dict:
-        """Compute average scores across all recorded answers."""
         if not self.qa_records:
             return {"clarity": 0, "relevance": 0, "depth": 0, "structure": 0, "overall": 0}
-
         totals = {"clarity": 0, "relevance": 0, "depth": 0, "structure": 0, "overall": 0}
         count = len(self.qa_records)
-
         for record in self.qa_records:
             ev = record["evaluation"]
             for key in totals:
                 totals[key] += ev.get(key, 0)
-
         return {k: round(v / count, 2) for k, v in totals.items()}
 
     def get_score_trend(self) -> list[float]:
-        """Return list of overall scores per question for charting."""
         return [r["evaluation"].get("overall", 0) for r in self.qa_records]
 
-    # ── Final Report Data ─────────────────────────────────────────────────────
-
     def build_final_report(self) -> dict:
-        """Compile a final report from all session data."""
         avg = self.get_average_scores()
         trend = self.get_score_trend()
         self.end_time = datetime.now().isoformat()
 
-        # Aggregate strengths and weaknesses across all feedback
         all_strengths = [r["feedback"].get("strengths", "") for r in self.qa_records if r["feedback"].get("strengths")]
         all_weaknesses = [r["feedback"].get("weaknesses", "") for r in self.qa_records if r["feedback"].get("weaknesses")]
         all_suggestions = [r["feedback"].get("suggestions", "") for r in self.qa_records if r["feedback"].get("suggestions")]
 
-        # Determine performance tier
         overall = avg["overall"]
         if overall >= 8:
             tier = "Excellent 🏆"
@@ -123,7 +80,7 @@ class InterviewSession:
         return {
             "role": self.role,
             "interview_type": self.interview_type,
-            "total_questions": self.question_number,
+            "total_questions": len(self.qa_records),
             "average_scores": avg,
             "score_trend": trend,
             "performance_tier": tier,
@@ -135,12 +92,3 @@ class InterviewSession:
             "start_time": self.start_time,
             "end_time": self.end_time,
         }
-
-    def to_json(self) -> str:
-        """Serialize session to JSON string for saving."""
-        return json.dumps(self.build_final_report(), indent=2)
-
-    def save_to_file(self, filepath: str):
-        """Save session report to a JSON file."""
-        with open(filepath, "w") as f:
-            f.write(self.to_json())

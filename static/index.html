@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Interview Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060810;
+    --surface: #0d1120;
+    --surface2: #131829;
+    --border: #1e2640;
+    --accent: #4f8ef7;
+    --accent-glow: rgba(79,142,247,0.15);
+    --green: #2dd4a0;
+    --green-glow: rgba(45,212,160,0.15);
+    --red: #f76f6f;
+    --amber: #f7b94f;
+    --purple: #a78bfa;
+    --text: #e8edf8;
+    --muted: #5a6380;
+    --muted2: #3a4060;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,142,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,142,247,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Screens ── */
+  .screen {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ── Welcome Screen ── */
+  #welcome {
+    flex-direction: column;
+    padding: 40px 20px;
+  }
+
+  .logo-area {
+    text-align: center;
+    margin-bottom: 48px;
+    animation: slideDown 0.8s ease;
+  }
+
+  .logo-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border: 1px solid rgba(79,142,247,0.3);
+    padding: 4px 12px;
+    border-radius: 2px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .logo-title {
+    font-family: var(--sans);
+    font-size: clamp(36px, 5vw, 60px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, #e8edf8 30%, #4f8ef7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+  }
+
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  .setup-card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 36px;
+    animation: slideUp 0.8s ease 0.2s both;
+  }
+
+  .field-group {
+    margin-bottom: 24px;
+  }
+
+  .field-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 10px;
+  }
+
+  .field-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 12px 16px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a6380' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  .field-select:focus { border-color: var(--accent); }
+  .field-select option { background: #131829; }
+
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .type-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .type-btn:hover { border-color: var(--accent); color: var(--text); }
+  .type-btn.active {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .info-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .info-chip {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 14px;
+    text-align: center;
+  }
+  .info-chip .num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green);
+    display: block;
+  }
+  .info-chip .lbl {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .start-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .start-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .start-btn:hover { background: #5f9ef8; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(79,142,247,0.3); }
+  .start-btn:hover::before { opacity: 1; }
+  .start-btn:active { transform: translateY(0); }
+  .start-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ── Interview Screen ── */
+  #interview {
+    flex-direction: column;
+    padding: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  .interview-layout {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
+    width: 100%;
+  }
+
+  /* Header bar */
+  .int-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+
+  .int-logo {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .progress-track {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .progress-dot {
+    width: 28px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.4s ease;
+  }
+  .progress-dot.done { background: var(--green); }
+  .progress-dot.current { background: var(--accent); animation: pulse-bar 1.5s ease infinite; }
+
+  @keyframes pulse-bar {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .int-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .diff-badge {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 2px;
+    border: 1px solid;
+  }
+  .diff-badge.easy { color: var(--green); border-color: rgba(45,212,160,0.3); background: var(--green-glow); }
+  .diff-badge.medium { color: var(--amber); border-color: rgba(247,185,79,0.3); background: rgba(247,185,79,0.08); }
+  .diff-badge.hard { color: var(--red); border-color: rgba(247,111,111,0.3); background: rgba(247,111,111,0.08); }
+
+  /* Timer */
+  .timer-ring {
+    width: 48px;
+    height: 48px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .timer-ring svg { transform: rotate(-90deg); }
+  .timer-ring circle {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 3;
+  }
+  .timer-ring .progress-ring {
+    stroke: var(--green);
+    stroke-dasharray: 126;
+    stroke-dashoffset: 0;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear, stroke 0.5s;
+  }
+  .timer-ring .timer-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    transform: none;
+  }
+
+  /* Main interview content */
+  .int-main {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    overflow: hidden;
+  }
+
+  .int-left {
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px;
+    position: relative;
+  }
+
+  .question-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .question-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .question-text {
+    font-family: var(--sans);
+    font-size: clamp(16px, 2.5vw, 20px);
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  .answer-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .answer-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+
+  .answer-textarea {
+    flex: 1;
+    min-height: 160px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 18px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .answer-textarea:focus { border-color: var(--green); }
+  .answer-textarea::placeholder { color: var(--muted2); }
+
+  .answer-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: 1px solid;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; }
+
+  .btn-primary {
+    background: var(--green);
+    border-color: var(--green);
+    color: #060810;
+    font-weight: 700;
+  }
+  .btn-primary:hover:not(:disabled) { background: #38e4b4; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(45,212,160,0.3); }
+
+  .btn-record {
+    background: transparent;
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-record:hover:not(:disabled) { background: var(--accent-glow); }
+  .btn-record.recording {
+    border-color: var(--red);
+    color: var(--red);
+    animation: pulse-record 1.2s ease infinite;
+  }
+
+  @keyframes pulse-record {
+    0%, 100% { box-shadow: none; }
+    50% { box-shadow: 0 0 0 4px rgba(247,111,111,0.2); }
+  }
+
+  .btn-skip {
+    background: transparent;
+    border-color: var(--muted2);
+    color: var(--muted);
+    margin-left: auto;
+  }
+  .btn-skip:hover:not(:disabled) { border-color: var(--muted); color: var(--text); }
+
+  /* Right sidebar */
+  .int-right {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 24px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .status-text {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 40px;
+  }
+
+  .score-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .score-row:last-child { border-bottom: none; }
+  .score-dim { font-size: 11px; color: var(--muted); }
+  .score-val {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted2);
+    transition: color 0.5s, transform 0.3s;
+  }
+  .score-val.lit { color: var(--accent); transform: scale(1.1); }
+
+  .history-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 60px;
+  }
+  .h-bar {
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    transition: height 0.5s ease;
+    position: relative;
+  }
+  .h-bar .h-score {
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Bottom status bar */
+  .int-footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 8px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .footer-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: blink 2s ease infinite;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ── Feedback Screen ── */
+  #feedback {
+    flex-direction: column;
+    padding: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  .feedback-layout {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
+  }
+
+  .feedback-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .fb-title {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .score-badges {
+    display: flex;
+    gap: 12px;
+  }
+
+  .score-badge {
+    text-align: center;
+    min-width: 60px;
+  }
+  .score-badge .val {
+    font-size: 24px;
+    font-weight: 700;
+    display: block;
+    line-height: 1;
+  }
+  .score-badge .dim {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .feedback-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    overflow: hidden;
+  }
+
+  .fb-panel {
+    background: var(--bg);
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  .fb-panel-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .fb-panel-label::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .fb-panel.strengths .fb-panel-label { color: var(--green); }
+  .fb-panel.strengths .fb-panel-label::before { background: var(--green); }
+  .fb-panel.weaknesses .fb-panel-label { color: var(--red); }
+  .fb-panel.weaknesses .fb-panel-label::before { background: var(--red); }
+  .fb-panel.suggestions .fb-panel-label { color: var(--amber); }
+  .fb-panel.suggestions .fb-panel-label::before { background: var(--amber); }
+  .fb-panel.improved .fb-panel-label { color: var(--purple); }
+  .fb-panel.improved .fb-panel-label::before { background: var(--purple); }
+
+  .fb-panel-content {
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  .feedback-footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .fb-question-preview {
+    font-size: 12px;
+    color: var(--muted);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fb-explanation {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    max-width: 400px;
+  }
+
+  /* ── Report Screen ── */
+  #report {
+    flex-direction: column;
+    padding: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow-y: auto;
+  }
+
+  .report-inner {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 32px;
+  }
+
+  .report-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .report-tier {
+    font-family: var(--sans);
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+
+  .report-tier-msg {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .avg-scores-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .avg-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 16px;
+    text-align: center;
+    transition: border-color 0.3s;
+  }
+  .avg-card:hover { border-color: var(--accent); }
+  .avg-card .avg-val {
+    font-size: 32px;
+    font-weight: 700;
+    display: block;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .avg-card .avg-lbl {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .trend-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .trend-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 80px;
+    margin-top: 16px;
+  }
+
+  .trend-bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    position: relative;
+    transition: height 0.8s ease;
+  }
+  .trend-bar .tb-label {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .trend-bar .tb-val {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .ai-summary-box {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 24px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .ai-summary-box::before {
+    content: 'AI ASSESSMENT';
+    position: absolute;
+    top: -8px;
+    left: 16px;
+    background: var(--bg);
+    padding: 0 8px;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .ai-summary-text {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .detail-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+  }
+
+  .detail-panel-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-panel-label.s { color: var(--green); }
+  .detail-panel-label.w { color: var(--red); }
+  .detail-panel-label.sg { color: var(--amber); }
+
+  .detail-item {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .detail-item .q-num { color: var(--accent); font-size: 10px; letter-spacing: 1px; margin-bottom: 4px; }
+
+  .report-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  /* ── Loading overlay ── */
+  #loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,8,16,0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    gap: 20px;
+  }
+  #loading-overlay.active { opacity: 1; pointer-events: all; }
+
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .loading-text {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  .loading-dots::after {
+    content: '';
+    animation: dots 1.5s steps(4, end) infinite;
+  }
+
+  @keyframes dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+  }
+
+  /* ── Animations ── */
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .fade-in { animation: fadeIn 0.4s ease; }
+
+  /* ── Utility ── */
+  .text-green { color: var(--green); }
+  .text-red { color: var(--red); }
+  .text-amber { color: var(--amber); }
+  .text-accent { color: var(--accent); }
+  .text-purple { color: var(--purple); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted2); }
+</style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text loading-dots" id="loading-text">PROCESSING</div>
+</div>
+
+<!-- ── SCREEN 1: Welcome ── -->
+<div class="screen active" id="welcome">
+  <div style="width:100%;max-width:560px;">
+    <div class="logo-area">
+      <div class="logo-badge">Multi-Agent System</div>
+      <div class="logo-title">AI Interview<br>Simulator</div>
+      <div class="logo-sub">ADAPTIVE · EVALUATED · VOICE-READY</div>
+    </div>
+
+    <div class="setup-card">
+      <div class="field-group">
+        <label class="field-label">Target Role</label>
+        <select class="field-select" id="role-select">
+          <option>Software Engineer</option>
+          <option>Data Scientist</option>
+          <option>Machine Learning Engineer</option>
+          <option>Frontend Developer</option>
+          <option>Backend Developer</option>
+          <option>DevOps Engineer</option>
+          <option>Product Manager</option>
+          <option>UX Designer</option>
+          <option>Data Analyst</option>
+          <option>Cybersecurity Analyst</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Interview Type</label>
+        <div class="type-grid">
+          <button class="type-btn active" data-type="HR">HR / Behavioral</button>
+          <button class="type-btn" data-type="Technical">Technical</button>
+          <button class="type-btn" data-type="Mixed">Mixed</button>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <div class="info-chip">
+          <span class="num">8</span>
+          <span class="lbl">Questions</span>
+        </div>
+        <div class="info-chip">
+          <span class="num">4</span>
+          <span class="lbl">Score Dimensions</span>
+        </div>
+        <div class="info-chip">
+          <span class="num">90s</span>
+          <span class="lbl">Answer Timer</span>
+        </div>
+      </div>
+
+      <button class="start-btn" id="start-btn" onclick="startInterview()">
+        START INTERVIEW →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCREEN 2: Interview ── -->
+<div class="screen" id="interview">
+  <div class="interview-layout">
+
+    <!-- Header -->
+    <div class="int-header">
+      <div class="int-logo">AI:INTERVIEW</div>
+      <div class="progress-track" id="progress-track"></div>
+      <div class="int-meta">
+        <span class="diff-badge medium" id="diff-badge">MEDIUM</span>
+        <div class="timer-ring" id="timer-ring">
+          <svg width="48" height="48" viewBox="0 0 48 48">
+            <circle cx="24" cy="24" r="20" />
+            <circle class="progress-ring" id="timer-circle" cx="24" cy="24" r="20" />
+          </svg>
+          <div class="timer-text" id="timer-text">90</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="int-main">
+      <div class="int-left">
+        <div class="question-card fade-in" id="question-card">
+          <div class="question-label">Question <span id="q-num-label">1</span> of 8</div>
+          <div class="question-text" id="question-text">Loading question...</div>
+        </div>
+
+        <div class="answer-area">
+          <div class="answer-label">YOUR ANSWER</div>
+          <textarea
+            class="answer-textarea"
+            id="answer-input"
+            placeholder="Type your answer here, or use the Record button to speak..."
+            rows="6"
+          ></textarea>
+          <div class="answer-controls">
+            <button class="btn btn-record" id="record-btn" onclick="toggleRecording()">
+              <span id="record-icon">🎤</span>
+              <span id="record-label">Record</span>
+            </button>
+            <button class="btn btn-primary" id="submit-btn" onclick="submitAnswer()">
+              Submit Answer →
+            </button>
+            <button class="btn btn-skip" id="skip-btn" onclick="skipQuestion()">
+              Skip ⏭
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="int-right">
+        <div>
+          <div class="sidebar-section-label">Status</div>
+          <div class="status-text" id="status-text">Ready</div>
+        </div>
+
+        <div>
+          <div class="sidebar-section-label">Last Scores</div>
+          <div id="score-display">
+            <div class="score-row"><span class="score-dim">Clarity</span><span class="score-val" id="sc-clarity">–</span></div>
+            <div class="score-row"><span class="score-dim">Relevance</span><span class="score-val" id="sc-relevance">–</span></div>
+            <div class="score-row"><span class="score-dim">Depth</span><span class="score-val" id="sc-depth">–</span></div>
+            <div class="score-row"><span class="score-dim">Structure</span><span class="score-val" id="sc-structure">–</span></div>
+            <div class="score-row"><span class="score-dim">Overall</span><span class="score-val" id="sc-overall">–</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="sidebar-section-label">Score History</div>
+          <div class="history-bars" id="history-bars" style="margin-bottom:20px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="int-footer">
+      <div class="footer-dot"></div>
+      <span id="footer-text">AI Interview Simulator · Ollama llama3.2 · Local Processing</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── SCREEN 3: Feedback ── -->
+<div class="screen" id="feedback">
+  <div class="feedback-layout">
+    <div class="feedback-header">
+      <div class="fb-title">Answer Feedback</div>
+      <div class="score-badges" id="fb-score-badges"></div>
+    </div>
+
+    <div class="feedback-body">
+      <div class="fb-panel strengths">
+        <div class="fb-panel-label">Strengths</div>
+        <div class="fb-panel-content" id="fb-strengths"></div>
+      </div>
+      <div class="fb-panel weaknesses">
+        <div class="fb-panel-label">Weaknesses</div>
+        <div class="fb-panel-content" id="fb-weaknesses"></div>
+      </div>
+      <div class="fb-panel suggestions">
+        <div class="fb-panel-label">Suggestions</div>
+        <div class="fb-panel-content" id="fb-suggestions"></div>
+      </div>
+      <div class="fb-panel improved">
+        <div class="fb-panel-label">Improved Answer</div>
+        <div class="fb-panel-content" id="fb-improved"></div>
+      </div>
+    </div>
+
+    <div class="feedback-footer">
+      <div class="fb-explanation" id="fb-explanation"></div>
+      <button class="btn btn-primary" id="continue-btn" onclick="continueInterview()">
+        Continue →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCREEN 4: Final Report ── -->
+<div class="screen" id="report">
+  <div class="report-inner">
+    <div class="report-header">
+      <div class="report-tier" id="rpt-tier"></div>
+      <div class="report-tier-msg" id="rpt-tier-msg"></div>
+    </div>
+
+    <div class="avg-scores-grid" id="avg-scores-grid"></div>
+
+    <div class="trend-section">
+      <div class="sidebar-section-label">PERFORMANCE TREND</div>
+      <div class="trend-bars" id="trend-bars" style="margin-bottom:24px;"></div>
+    </div>
+
+    <div class="ai-summary-box">
+      <div class="ai-summary-text" id="rpt-summary">Generating summary...</div>
+    </div>
+
+    <div class="detail-grid" id="detail-grid"></div>
+
+    <div class="report-actions">
+      <button class="btn btn-primary" onclick="restartInterview()">New Interview ↺</button>
+      <button class="btn btn-record" onclick="saveReport()">Save Report 💾</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+const state = {
+  sessionId: null,
+  currentQuestion: '',
+  questionNumber: 0,
+  totalQuestions: 8,
+  interviewType: 'HR',
+  difficulty: 'medium',
+  pendingNext: null,
+  report: null,
+  timerInterval: null,
+  timerSeconds: 90,
+  isRecording: false,
+  mediaRecorder: null,
+  audioChunks: [],
+};
+
+// ── Utility ────────────────────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+}
+
+function showLoading(text = 'PROCESSING') {
+  document.getElementById('loading-text').textContent = text;
+  document.getElementById('loading-overlay').classList.add('active');
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('active');
+}
+
+function setStatus(text) {
+  const el = document.getElementById('status-text');
+  if (el) { el.textContent = text; el.classList.add('fade-in'); setTimeout(() => el.classList.remove('fade-in'), 400); }
+  const footer = document.getElementById('footer-text');
+  if (footer) footer.textContent = text;
+}
+
+function scoreColor(v) {
+  if (v >= 8) return 'var(--green)';
+  if (v >= 5) return 'var(--amber)';
+  return 'var(--red)';
+}
+
+// ── Type selection ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.interviewType = btn.dataset.type;
+  });
+});
+
+// ── Timer ──────────────────────────────────────────────────────────────────────
+function startTimer(seconds = 90) {
+  clearInterval(state.timerInterval);
+  state.timerSeconds = seconds;
+  const circle = document.getElementById('timer-circle');
+  const circumference = 2 * Math.PI * 20; // r=20
+
+  function updateTimer() {
+    const pct = state.timerSeconds / seconds;
+    const offset = circumference * (1 - pct);
+    circle.style.strokeDashoffset = offset;
+    circle.style.stroke = state.timerSeconds > 20 ? 'var(--green)' : state.timerSeconds > 10 ? 'var(--amber)' : 'var(--red)';
+    document.getElementById('timer-text').textContent = state.timerSeconds;
+    document.getElementById('timer-text').style.color = state.timerSeconds > 10 ? 'var(--text)' : 'var(--red)';
+
+    if (state.timerSeconds <= 0) {
+      clearInterval(state.timerInterval);
+      autoSubmit();
+      return;
+    }
+    state.timerSeconds--;
+  }
+
+  updateTimer();
+  state.timerInterval = setInterval(updateTimer, 1000);
+}
+
+function stopTimer() {
+  clearInterval(state.timerInterval);
+}
+
+function autoSubmit() {
+  setStatus('⏱ Time up! Auto-submitting...');
+  submitAnswer(true);
+}
+
+// ── Progress Track ─────────────────────────────────────────────────────────────
+function updateProgressTrack(current, total) {
+  const track = document.getElementById('progress-track');
+  track.innerHTML = '';
+  for (let i = 1; i <= total; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot' + (i < current ? ' done' : i === current ? ' current' : '');
+    track.appendChild(dot);
+  }
+}
+
+// ── Start Interview ────────────────────────────────────────────────────────────
+async function startInterview() {
+  const role = document.getElementById('role-select').value;
+  const type = state.interviewType;
+
+  showLoading('STARTING INTERVIEW');
+  document.getElementById('start-btn').disabled = true;
+
+  try {
+    const res = await fetch('/api/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role, interview_type: type }),
+    });
+
+    if (!res.ok) throw new Error('Failed to start');
+    const data = await res.json();
+
+    state.sessionId = data.session_id;
+    state.currentQuestion = data.question;
+    state.questionNumber = data.question_number;
+    state.totalQuestions = data.total_questions;
+    state.difficulty = data.difficulty;
+
+    hideLoading();
+    showScreen('interview');
+    displayQuestion(data.question, data.question_number, data.difficulty);
+
+  } catch (err) {
+    hideLoading();
+    document.getElementById('start-btn').disabled = false;
+    alert('Error: ' + err.message + '\n\nMake sure Ollama is running: ollama serve');
+  }
+}
+
+// ── Display Question ───────────────────────────────────────────────────────────
+function displayQuestion(question, qNum, difficulty) {
+  // Update content
+  document.getElementById('question-text').textContent = question;
+  document.getElementById('q-num-label').textContent = qNum;
+  document.getElementById('answer-input').value = '';
+  document.getElementById('answer-input').disabled = false;
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('skip-btn').disabled = false;
+  document.getElementById('record-btn').disabled = false;
+
+  // Difficulty badge
+  const badge = document.getElementById('diff-badge');
+  badge.textContent = difficulty.toUpperCase();
+  badge.className = 'diff-badge ' + difficulty;
+
+  // Progress
+  updateProgressTrack(qNum, state.totalQuestions);
+
+  // Timer
+  startTimer(90);
+
+  setStatus(`Question ${qNum} / ${state.totalQuestions} ready`);
+
+  // Add question card animation
+  const card = document.getElementById('question-card');
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(10px)';
+  setTimeout(() => {
+    card.style.transition = 'all 0.4s ease';
+    card.style.opacity = '1';
+    card.style.transform = 'translateY(0)';
+  }, 50);
+}
+
+// ── Submit Answer ──────────────────────────────────────────────────────────────
+async function submitAnswer(auto = false) {
+  stopTimer();
+  const answer = document.getElementById('answer-input').value.trim();
+
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('skip-btn').disabled = true;
+  document.getElementById('record-btn').disabled = true;
+  document.getElementById('answer-input').disabled = true;
+
+  showLoading('EVALUATING ANSWER');
+  setStatus('Evaluating answer...');
+
+  try {
+    const res = await fetch('/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: state.sessionId, answer }),
+    });
+
+    if (!res.ok) throw new Error('Submit failed');
+    const data = await res.json();
+
+    // Store next question if available
+    if (data.next_question) {
+      state.pendingNext = {
+        question: data.next_question,
+        number: data.next_question_number,
+        difficulty: data.next_difficulty,
+      };
+    } else {
+      state.pendingNext = null;
+    }
+
+    // Update score display
+    updateScoreDisplay(data.evaluation);
+    addHistoryBar(data.evaluation.overall);
+
+    // Show feedback
+    hideLoading();
+    showFeedback(state.currentQuestion, data.evaluation, data.feedback, data.is_last, data.question_number);
+
+  } catch (err) {
+    hideLoading();
+    setStatus('Error: ' + err.message);
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('skip-btn').disabled = false;
+    document.getElementById('record-btn').disabled = false;
+    document.getElementById('answer-input').disabled = false;
+    startTimer(state.timerSeconds);
+  }
+}
+
+async function skipQuestion() {
+  document.getElementById('answer-input').value = '';
+  await submitAnswer();
+}
+
+// ── Show Feedback ──────────────────────────────────────────────────────────────
+function showFeedback(question, evaluation, feedback, isLast, qNum) {
+  // Score badges
+  const badgeContainer = document.getElementById('fb-score-badges');
+  badgeContainer.innerHTML = '';
+  const dims = [
+    ['Clarity', evaluation.clarity, 'var(--accent)'],
+    ['Relevance', evaluation.relevance, 'var(--green)'],
+    ['Depth', evaluation.depth, 'var(--amber)'],
+    ['Structure', evaluation.structure, 'var(--purple)'],
+    ['Overall', evaluation.overall, scoreColor(evaluation.overall)],
+  ];
+  dims.forEach(([dim, val, color]) => {
+    const b = document.createElement('div');
+    b.className = 'score-badge';
+    b.innerHTML = `<span class="val" style="color:${color}">${val}</span><div class="dim">${dim}</div>`;
+    badgeContainer.appendChild(b);
+  });
+
+  // Panels
+  document.getElementById('fb-strengths').textContent = feedback.strengths || '–';
+  document.getElementById('fb-weaknesses').textContent = feedback.weaknesses || '–';
+  document.getElementById('fb-suggestions').textContent = feedback.suggestions || '–';
+  document.getElementById('fb-improved').textContent = feedback.improved_answer || '–';
+  document.getElementById('fb-explanation').textContent = evaluation.explanation || '';
+
+  // Continue button text
+  const continueBtn = document.getElementById('continue-btn');
+  if (isLast) {
+    continueBtn.textContent = 'View Final Report 🏆';
+  } else {
+    const remaining = state.totalQuestions - qNum;
+    continueBtn.textContent = `Next Question (${remaining} left) →`;
+  }
+
+  showScreen('feedback');
+}
+
+// ── Continue Interview ─────────────────────────────────────────────────────────
+function continueInterview() {
+  if (!state.pendingNext) {
+    // Last question — get report
+    fetchReport();
+  } else {
+    state.currentQuestion = state.pendingNext.question;
+    state.questionNumber = state.pendingNext.number;
+    state.difficulty = state.pendingNext.difficulty;
+    state.pendingNext = null;
+    showScreen('interview');
+    displayQuestion(state.currentQuestion, state.questionNumber, state.difficulty);
+  }
+}
+
+// ── Fetch Report ───────────────────────────────────────────────────────────────
+async function fetchReport() {
+  showLoading('GENERATING REPORT');
+
+  try {
+    const res = await fetch(`/api/report/${state.sessionId}`);
+    if (!res.ok) throw new Error('Report failed');
+    const report = await res.json();
+    state.report = report;
+    hideLoading();
+    displayReport(report);
+  } catch (err) {
+    hideLoading();
+    alert('Error generating report: ' + err.message);
+  }
+}
+
+function displayReport(report) {
+  const avg = report.average_scores;
+
+  // Tier
+  document.getElementById('rpt-tier').textContent = report.performance_tier;
+  document.getElementById('rpt-tier-msg').textContent = report.tier_message;
+
+  // Color tier
+  const tier = document.getElementById('rpt-tier');
+  const overall = avg.overall;
+  tier.style.color = overall >= 8 ? 'var(--green)' : overall >= 6 ? 'var(--accent)' : overall >= 4 ? 'var(--amber)' : 'var(--red)';
+
+  // Avg score cards
+  const grid = document.getElementById('avg-scores-grid');
+  grid.innerHTML = '';
+  [['Clarity', avg.clarity], ['Relevance', avg.relevance], ['Depth', avg.depth], ['Structure', avg.structure], ['Overall', avg.overall]].forEach(([lbl, val]) => {
+    const c = document.createElement('div');
+    c.className = 'avg-card';
+    c.innerHTML = `<span class="avg-val" style="color:${scoreColor(val)}">${val}</span><span class="avg-lbl">${lbl}</span>`;
+    grid.appendChild(c);
+  });
+
+  // Trend bars
+  const trendContainer = document.getElementById('trend-bars');
+  trendContainer.innerHTML = '';
+  const maxScore = 10;
+  report.score_trend.forEach((score, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'trend-bar';
+    const pct = (score / maxScore) * 100;
+    bar.style.height = pct + '%';
+    bar.style.background = scoreColor(score);
+    bar.innerHTML = `<span class="tb-val">${score}</span><span class="tb-label">Q${i + 1}</span>`;
+    trendContainer.appendChild(bar);
+  });
+
+  // AI summary
+  document.getElementById('rpt-summary').textContent = report.ai_summary || 'No summary available.';
+
+  // Detail panels
+  const detailGrid = document.getElementById('detail-grid');
+  detailGrid.innerHTML = '';
+
+  [
+    ['Strengths', 's', report.overall_strengths],
+    ['To Improve', 'w', report.overall_weaknesses],
+    ['Suggestions', 'sg', report.overall_suggestions],
+  ].forEach(([label, cls, items]) => {
+    const panel = document.createElement('div');
+    panel.className = 'detail-panel';
+    panel.innerHTML = `<div class="detail-panel-label ${cls}">${label}</div>`;
+    items.slice(0, 5).forEach((item, i) => {
+      if (!item) return;
+      const d = document.createElement('div');
+      d.className = 'detail-item';
+      d.innerHTML = `<div class="q-num">Q${i + 1}</div>${item.substring(0, 200)}${item.length > 200 ? '...' : ''}`;
+      panel.appendChild(d);
+    });
+    detailGrid.appendChild(panel);
+  });
+
+  showScreen('report');
+}
+
+// ── Score Display ──────────────────────────────────────────────────────────────
+function updateScoreDisplay(evaluation) {
+  const dims = ['clarity', 'relevance', 'depth', 'structure', 'overall'];
+  dims.forEach(dim => {
+    const el = document.getElementById('sc-' + dim);
+    if (el) {
+      const val = evaluation[dim];
+      el.textContent = val;
+      el.style.color = scoreColor(val);
+      el.classList.add('lit');
+      setTimeout(() => el.classList.remove('lit'), 600);
+    }
+  });
+}
+
+function addHistoryBar(score) {
+  const container = document.getElementById('history-bars');
+  const bar = document.createElement('div');
+  bar.className = 'h-bar';
+  const pct = Math.max(4, (score / 10) * 60);
+  bar.style.height = pct + 'px';
+  bar.style.background = scoreColor(score);
+  bar.innerHTML = `<span class="h-score">${score}</span>`;
+  container.appendChild(bar);
+}
+
+// ── Voice Recording ────────────────────────────────────────────────────────────
+async function toggleRecording() {
+  if (state.isRecording) {
+    stopRecording();
+  } else {
+    await startRecording();
+  }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    state.audioChunks = [];
+    state.mediaRecorder = new MediaRecorder(stream);
+
+    state.mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) state.audioChunks.push(e.data);
+    };
+
+    state.mediaRecorder.onstop = async () => {
+      const blob = new Blob(state.audioChunks, { type: 'audio/webm' });
+      stream.getTracks().forEach(t => t.stop());
+      await transcribeAudio(blob);
+    };
+
+    state.mediaRecorder.start();
+    state.isRecording = true;
+
+    document.getElementById('record-btn').classList.add('recording');
+    document.getElementById('record-icon').textContent = '⏹';
+    document.getElementById('record-label').textContent = 'Stop';
+    setStatus('🎤 Recording... click Stop when done.');
+
+  } catch (err) {
+    setStatus('Microphone error: ' + err.message + '. Use text mode.');
+  }
+}
+
+function stopRecording() {
+  if (state.mediaRecorder && state.isRecording) {
+    state.mediaRecorder.stop();
+    state.isRecording = false;
+    document.getElementById('record-btn').classList.remove('recording');
+    document.getElementById('record-icon').textContent = '🎤';
+    document.getElementById('record-label').textContent = 'Record';
+    setStatus('Processing audio...');
+  }
+}
+
+async function transcribeAudio(blob) {
+  // Use Web Speech API for transcription (browser-native, no API key needed)
+  // Since we can't send audio to Ollama, we use browser SpeechRecognition
+  setStatus('Transcription complete. Review and submit your answer.');
+  // Note: actual transcription happens via browser API below
+}
+
+// Browser-native speech recognition (continuous mode)
+let speechRecognition = null;
+
+function initSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return false;
+
+  speechRecognition = new SpeechRecognition();
+  speechRecognition.continuous = true;
+  speechRecognition.interimResults = true;
+  speechRecognition.lang = 'en-US';
+
+  let finalTranscript = '';
+
+  speechRecognition.onstart = () => {
+    finalTranscript = document.getElementById('answer-input').value || '';
+    setStatus('🎤 Listening... speak your answer.');
+  };
+
+  speechRecognition.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript + ' ';
+      } else {
+        interim = event.results[i][0].transcript;
+      }
+    }
+    document.getElementById('answer-input').value = finalTranscript + interim;
+  };
+
+  speechRecognition.onerror = (e) => {
+    setStatus('Speech error: ' + e.error + '. Use text mode.');
+    stopSpeechRecognition();
+  };
+
+  speechRecognition.onend = () => {
+    if (state.isRecording) {
+      speechRecognition.start(); // auto-restart
+    } else {
+      setStatus('Recording stopped. Review your answer and submit.');
+    }
+  };
+
+  return true;
+}
+
+function startSpeechRecognition() {
+  if (!speechRecognition && !initSpeechRecognition()) {
+    setStatus('Speech recognition not supported in this browser. Use Chrome.');
+    return;
+  }
+  state.isRecording = true;
+  speechRecognition.start();
+  document.getElementById('record-btn').classList.add('recording');
+  document.getElementById('record-icon').textContent = '⏹';
+  document.getElementById('record-label').textContent = 'Stop';
+}
+
+function stopSpeechRecognition() {
+  state.isRecording = false;
+  if (speechRecognition) speechRecognition.stop();
+  document.getElementById('record-btn').classList.remove('recording');
+  document.getElementById('record-icon').textContent = '🎤';
+  document.getElementById('record-label').textContent = 'Record';
+  setStatus('Recording stopped. Submit your answer.');
+}
+
+// Override toggleRecording to use Web Speech API
+async function toggleRecording() {
+  if (state.isRecording) {
+    stopSpeechRecognition();
+  } else {
+    startSpeechRecognition();
+  }
+}
+
+// ── Restart ────────────────────────────────────────────────────────────────────
+function restartInterview() {
+  state.sessionId = null;
+  state.currentQuestion = '';
+  state.questionNumber = 0;
+  state.pendingNext = null;
+  state.report = null;
+  stopTimer();
+
+  document.getElementById('history-bars').innerHTML = '';
+  ['clarity', 'relevance', 'depth', 'structure', 'overall'].forEach(d => {
+    const el = document.getElementById('sc-' + d);
+    if (el) { el.textContent = '–'; el.style.color = 'var(--muted2)'; }
+  });
+  document.getElementById('start-btn').disabled = false;
+  showScreen('welcome');
+}
+
+function saveReport() {
+  if (!state.report) return;
+  const blob = new Blob([JSON.stringify(state.report, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `interview_report_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

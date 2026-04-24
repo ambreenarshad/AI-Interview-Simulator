@@ -1,174 +1,88 @@
-# 🤖 AI Interview Simulator
-### Multi-Agent Evaluation · Adaptive Questioning · Voice Interface
+# 🤖 AI Interview Simulator — Web App
 
-A complete, GUI-based AI interview simulator powered by **Ollama (llama3.2:latest)** running locally.
-No external APIs. No subscriptions. Fully offline-capable (except Google STT).
+A FastAPI + vanilla JS web application for AI-powered mock interviews using Ollama locally.
+
+---
+
+## 🚀 Quick Start (3 steps)
+
+### Step 1 — Start Ollama
+```bash
+ollama serve
+# In another terminal:
+ollama pull llama3.2:latest
+```
+
+### Step 2 — Install Python dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### Step 3 — Run the web server
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+Then open: **http://localhost:8000**
 
 ---
 
 ## 📁 Project Structure
 
 ```
-ai_interview_simulator/
-│
-├── app.py                        # Main GUI application (entry point)
+interview_app/
+├── main.py                  # FastAPI app + API routes
+├── requirements.txt
+├── README.md
 │
 ├── agents/
-│   ├── interviewer_agent.py      # Generates interview questions via Ollama
-│   ├── evaluator_agent.py        # Scores answers on 4 dimensions (1–10)
-│   ├── feedback_agent.py         # Provides strengths, weaknesses, suggestions
-│   ├── report_agent.py           # Generates final narrative summary
-│   └── session.py                # Session manager + difficulty adapter
+│   ├── interviewer_agent.py # Generates questions
+│   ├── evaluator_agent.py   # Scores answers (Clarity/Relevance/Depth/Structure)
+│   ├── feedback_agent.py    # Strengths, weaknesses, suggestions
+│   ├── report_agent.py      # Final narrative summary
+│   └── session.py           # Session state + difficulty adapter
 │
 ├── utils/
-│   ├── llm.py                    # Ollama subprocess interface
-│   └── voice.py                  # TTS (gTTS + pyttsx3) + STT (SpeechRecognition)
+│   └── llm.py               # Ollama subprocess interface
 │
-├── requirements.txt
-└── README.md
+└── static/
+    └── index.html           # Full single-page frontend
 ```
 
 ---
 
-## ⚙️ Prerequisites
+## 🎯 Features
 
-### 1. Install Ollama
-```bash
-# Linux / macOS
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# Windows: Download from https://ollama.ai
-```
-
-### 2. Pull the model
-```bash
-ollama pull llama3.2:latest
-```
-
-### 3. Make sure Ollama is running
-```bash
-ollama serve   # keep this running in a terminal
-```
+| Feature | Details |
+|---------|---------|
+| **8 Questions** | Exactly 8 per session, no more no less |
+| **90s Timer** | Visible countdown per question, auto-submits on expiry |
+| **Voice Input** | Browser Web Speech API (Chrome recommended) |
+| **Adaptive Difficulty** | Score >7 → Hard, <4 → Easy, else Medium |
+| **4-Dim Scoring** | Clarity · Relevance · Depth · Structure |
+| **Real-time Feedback** | After every answer |
+| **Final Report** | Summary + trend + AI narrative |
+| **Save Report** | Download JSON |
 
 ---
 
-## 🚀 Installation
+## 🔌 API Endpoints
 
-### Linux / Ubuntu
-```bash
-# System dependencies
-sudo apt-get install python3-tk portaudio19-dev
-
-# Python packages
-pip install -r requirements.txt
-```
-
-### macOS
-```bash
-brew install portaudio
-pip install -r requirements.txt
-```
-
-### Windows
-```bash
-# Install portaudio via conda or download binary
-conda install pyaudio
-pip install gTTS SpeechRecognition pyttsx3 pygame
-```
-
----
-
-## ▶️ Running the App
-
-```bash
-cd ai_interview_simulator
-python app.py
-```
-
-That's it! The GUI will open automatically.
-
----
-
-## 🎯 How to Use
-
-1. **Welcome Screen**
-   - Select your **Role** (e.g., Software Engineer, Data Scientist)
-   - Select **Interview Type**: HR / Technical / Mixed
-   - Toggle **Voice Mode** on/off (requires microphone)
-   - Click **START INTERVIEW**
-
-2. **Interview Screen**
-   - Questions are displayed and spoken aloud (TTS)
-   - Speak your answer when prompted (STT auto-records)
-   - Or type manually and click Submit (if voice is off)
-   - Use Skip to skip a question
-
-3. **Feedback Screen** (after each answer)
-   - See scores for Clarity, Relevance, Depth, Structure
-   - Read strengths, weaknesses, suggestions
-   - See an AI-improved version of your answer
-   - Click Continue for next question
-
-4. **Final Report** (after 8–10 questions)
-   - See average scores across all dimensions
-   - Read aggregated strengths and improvement areas
-   - AI narrative summary of your performance
-   - Save report as JSON
-
----
-
-## 🤖 Agent Architecture
-
-| Agent | Function | Model |
-|-------|----------|-------|
-| **Interviewer Agent** | Generates role-specific questions | llama3.2:latest |
-| **Evaluator Agent** | Scores on Clarity, Relevance, Depth, Structure | llama3.2:latest |
-| **Feedback Agent** | Strengths, weaknesses, improved answer | llama3.2:latest |
-| **Report Agent** | Narrative session summary | llama3.2:latest |
-| **Difficulty Adapter** | score >7 → hard, <4 → easy, else medium | Rule-based |
-
----
-
-## 📊 Evaluation Dimensions
-
-| Dimension | What it measures |
-|-----------|-----------------|
-| **Clarity (1–10)** | Is the answer clear and understandable? |
-| **Relevance (1–10)** | Does it address the question directly? |
-| **Depth (1–10)** | Is it detailed and substantive? |
-| **Structure (1–10)** | Does it follow STAR (Situation, Task, Action, Result)? |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/start` | Start session, get Q1 |
+| POST | `/api/submit` | Submit answer, get evaluation + next Q |
+| GET | `/api/report/{session_id}` | Get final report |
+| DELETE | `/api/session/{session_id}` | Clean up session |
 
 ---
 
 ## 🔧 Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `Ollama not found` | Run `ollama serve` and ensure it's in PATH |
-| `No module named tkinter` | `sudo apt-get install python3-tk` |
-| `pyaudio build failed` | `sudo apt-get install portaudio19-dev` then reinstall |
-| `No speech detected` | Check microphone permissions; speak clearly |
-| Questions are slow | Normal — llama3.2 generation can take 10–30s locally |
-| STT not working | Requires internet for Google Web Speech; use text mode |
-
----
-
-## 💾 Session Reports
-
-Reports are saved as JSON files in the project directory:
-```
-interview_report_20240101_120000.json
-```
-
-Contains: all Q&A pairs, scores per question, feedback, averages, and AI summary.
-
----
-
-## 🔑 Key Technical Decisions
-
-- **Ollama via subprocess** — `ollama run llama3.2:latest` called via `subprocess.run()`
-- **TTS**: gTTS (converts text → MP3) played with pygame; pyttsx3 as offline fallback  
-- **STT**: `SpeechRecognition` library with Google Web Speech (free, no API key needed)
-- **GUI**: Pure tkinter — no extra GUI framework dependencies
-- **Threading**: All LLM calls and voice I/O run in background threads to keep UI responsive
-- **Session state**: Stored in `InterviewSession` dataclass (JSON-serializable)
+| Problem | Fix |
+|---------|-----|
+| `Connection refused` | Run `ollama serve` |
+| `LLM Error: Ollama not found` | Add ollama to PATH |
+| Voice not working | Use Chrome browser |
+| Slow responses | Normal — llama3.2 takes 10-30s locally |
+| Port in use | `uvicorn main:app --port 8001` |

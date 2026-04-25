@@ -11,7 +11,7 @@ import uuid
 import json
 from datetime import datetime
 
-from agents.interviewer_agent import generate_question
+from agents.interviewer_agent import generate_question, estimate_time_limit
 from agents.evaluator_agent import evaluate_answer
 from agents.feedback_agent import generate_feedback
 from agents.report_agent import generate_final_summary
@@ -21,9 +21,6 @@ app = FastAPI(title="AI Interview Simulator")
 
 # In-memory session store
 sessions: dict[str, InterviewSession] = {}
-
-# FIX 4: 5 questions instead of 8
-TOTAL_QUESTIONS = 5
 
 # ── Models ─────────────────────────────────────────────────────────────────────
 
@@ -69,12 +66,16 @@ async def start_interview(req: StartRequest):
     session.current_question = question
     session.question_number = 1
 
+    # ── CHANGE: compute dynamic time limit for the first question ──
+    time_limit = estimate_time_limit(question, "medium")
+
     return {
         "session_id": session_id,
         "question": question,
         "question_number": 1,
         "total_questions": total,
         "difficulty": "medium",
+        "time_limit": time_limit,          # NEW
     }
 
 
@@ -115,9 +116,14 @@ async def submit_answer(req: SubmitAnswerRequest):
         )
         session.current_question = next_q
         session.question_number += 1
+
+        # ── CHANGE: compute dynamic time limit for the next question ──
+        next_time_limit = estimate_time_limit(next_q, session.current_difficulty)
+
         result["next_question"] = next_q
         result["next_question_number"] = session.question_number
         result["next_difficulty"] = session.current_difficulty
+        result["next_time_limit"] = next_time_limit   # NEW
 
     return result
 
@@ -131,8 +137,6 @@ async def skip_question(req: SkipQuestionRequest):
 
     question = session.current_question
 
-    # FIX 5: skipped questions get 0 scores — they already drag down averages,
-    # but we also flag them so the report can weigh them appropriately.
     skipped_evaluation = {
         "clarity": 0, "relevance": 0, "depth": 0, "structure": 0, "overall": 0.0,
         "explanation": "Question was skipped.",
@@ -166,9 +170,14 @@ async def skip_question(req: SkipQuestionRequest):
         )
         session.current_question = next_q
         session.question_number += 1
+
+        # ── CHANGE: compute dynamic time limit for the next question ──
+        next_time_limit = estimate_time_limit(next_q, session.current_difficulty)
+
         result["next_question"] = next_q
         result["next_question_number"] = session.question_number
         result["next_difficulty"] = session.current_difficulty
+        result["next_time_limit"] = next_time_limit   # NEW
 
     return result
 
@@ -181,7 +190,6 @@ async def extend_interview(req: ExtendRequest):
         raise HTTPException(status_code=404, detail="Session not found")
 
     extra = max(1, min(req.extra_questions, 20))
-    # Push the target forward by the requested amount
     session.total_questions = session.question_number + extra
 
     next_q = generate_question(
@@ -194,11 +202,15 @@ async def extend_interview(req: ExtendRequest):
     session.current_question = next_q
     session.question_number += 1
 
+    # ── CHANGE: compute dynamic time limit ──
+    next_time_limit = estimate_time_limit(next_q, session.current_difficulty)
+
     return {
         "total_questions": session.total_questions,
         "next_question": next_q,
         "next_question_number": session.question_number,
         "next_difficulty": session.current_difficulty,
+        "next_time_limit": next_time_limit,            # NEW
     }
 
 

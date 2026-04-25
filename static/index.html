@@ -342,6 +342,29 @@
     transform: none;
   }
 
+  /* ── CHANGE 1: End Interview button style ── */
+  .btn-end-interview {
+    background: transparent;
+    border: 1px solid rgba(247,111,111,0.45);
+    border-radius: 4px;
+    color: var(--red);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-end-interview:hover {
+    background: rgba(247,111,111,0.1);
+    border-color: var(--red);
+  }
+
   .int-main {
     display: grid;
     grid-template-columns: 1fr 320px;
@@ -758,7 +781,7 @@
     max-width: 400px;
   }
 
-  /* ── FIX 1: Skip Notice — now requires OK button click to proceed ── */
+  /* ── Skip Notice ── */
   #skip-notice {
     position: fixed;
     inset: 0;
@@ -804,7 +827,6 @@
   .skip-notice-msg strong {
     color: var(--text);
   }
-  /* OK button inside skip notice */
   .skip-ok-btn {
     background: var(--amber);
     border: none;
@@ -1217,7 +1239,7 @@
   <div class="loading-text loading-dots" id="loading-text">PROCESSING</div>
 </div>
 
-<!-- ── FIX 1: Skip Notice — OK button triggers navigation, no auto-advance ── -->
+<!-- ── Skip Notice ── -->
 <div id="skip-notice">
   <div class="skip-notice-box">
     <div class="skip-notice-icon">⚠️</div>
@@ -1227,7 +1249,6 @@
       Even a brief, partial answer demonstrates effort and gives the interviewer something to work with.
       Silence — or skipping — leaves a negative impression that's hard to recover from.
     </div>
-    <!-- OK button — calls skipProceed() which handles navigation -->
     <button class="skip-ok-btn" id="skip-ok-btn" onclick="skipProceed()">OK, Got It →</button>
   </div>
 </div>
@@ -1316,7 +1337,7 @@
           <span class="lbl">Score Dimensions</span>
         </div>
         <div class="info-chip">
-          <span class="num">90s</span>
+          <span class="num">Dynamic</span>
           <span class="lbl">Answer Timer</span>
         </div>
       </div>
@@ -1337,6 +1358,10 @@
       <div class="progress-track" id="progress-track"></div>
       <div class="int-meta">
         <span class="diff-badge medium" id="diff-badge">MEDIUM</span>
+        <!-- ── CHANGE 1: End Interview button in header ── -->
+        <button class="btn-end-interview" onclick="endInterviewEarly()" title="End interview and return to main menu">
+          ✕ End Interview
+        </button>
         <div class="timer-ring" id="timer-ring">
           <svg width="48" height="48" viewBox="0 0 48 48">
             <circle cx="24" cy="24" r="20" />
@@ -1493,6 +1518,8 @@ const state = {
   report: null,
   timerInterval: null,
   timerSeconds: 90,
+  // ── CHANGE 2: track the time limit per question ──
+  currentTimeLimit: 90,
   isRecording: false,
   mediaRecorder: null,
   audioChunks: [],
@@ -1547,7 +1574,6 @@ function speakQuestion(text, onDone) {
   const indicator  = document.getElementById('tts-indicator');
   const stopVoiceBtn = document.getElementById('stop-voice-btn');
 
-  // Store onDone so stopVoice() can call it
   state._ttsOnDone = onDone;
   state._ttsSpeaking = true;
 
@@ -1576,7 +1602,7 @@ function speakQuestion(text, onDone) {
   utterance.volume = 1.0;
 
   function _finishTTS() {
-    if (!state._ttsSpeaking) return; // already handled by stopVoice
+    if (!state._ttsSpeaking) return;
     state._ttsSpeaking = false;
     if (indicator) indicator.classList.remove('speaking');
     if (stopVoiceBtn) stopVoiceBtn.classList.remove('visible');
@@ -1596,7 +1622,6 @@ function speakQuestion(text, onDone) {
   window.speechSynthesis.speak(utterance);
 }
 
-// Called when user clicks "Stop Voice" — cancel speech, enable controls, start timer
 function stopVoice() {
   if (!state._ttsSpeaking) return;
   state._ttsSpeaking = false;
@@ -1614,12 +1639,11 @@ function stopVoice() {
 
   setStatus(`Voice stopped — type or record your answer.`);
 
-  // Call onDone (which is startTimer) so the timer begins immediately
   if (state._ttsOnDone) { state._ttsOnDone(); state._ttsOnDone = null; }
 }
 
 // ── Timer ──────────────────────────────────────────────────────────────────────
-function startTimer(seconds = 90) {
+function startTimer(seconds) {
   clearInterval(state.timerInterval);
   state.timerSeconds = seconds;
   const circle = document.getElementById('timer-circle');
@@ -1665,6 +1689,15 @@ function updateProgressTrack(current, total) {
   }
 }
 
+// ── CHANGE 1: End Interview Early ─────────────────────────────────────────────
+function endInterviewEarly() {
+  const confirmed = window.confirm(
+    'End the interview now?\n\nYour progress will be lost and you will return to the main menu.'
+  );
+  if (!confirmed) return;
+  restartInterview();
+}
+
 // ── Start Interview ────────────────────────────────────────────────────────────
 async function startInterview() {
   const role = document.getElementById('role-select').value;
@@ -1689,10 +1722,12 @@ async function startInterview() {
     state.questionNumber = data.question_number;
     state.totalQuestions = data.total_questions;
     state.difficulty = data.difficulty;
+    // ── CHANGE 2: store time_limit from API (fallback 90s) ──
+    state.currentTimeLimit = data.time_limit || 90;
 
     hideLoading();
     showScreen('interview');
-    displayQuestion(data.question, data.question_number, data.difficulty);
+    displayQuestion(data.question, data.question_number, data.difficulty, state.currentTimeLimit);
 
   } catch (err) {
     hideLoading();
@@ -1702,28 +1737,30 @@ async function startInterview() {
 }
 
 // ── Display Question ───────────────────────────────────────────────────────────
-function displayQuestion(question, qNum, difficulty) {
+// ── CHANGE 2: accepts timeLimit param instead of hardcoding 90 ──
+function displayQuestion(question, qNum, difficulty, timeLimit) {
+  // Fallback to 90 if not supplied (e.g. old server version)
+  const limit = timeLimit || 90;
+  state.currentTimeLimit = limit;
+
   document.getElementById('question-text').textContent = question;
   document.getElementById('q-num-label').textContent = qNum;
   document.getElementById('q-total-label').textContent = state.totalQuestions;
   document.getElementById('answer-input').value = '';
 
-  // always reset record button to default state on each new question
   resetRecordButton();
 
-  // Reset stop-voice button state for new question
   const stopVoiceBtn = document.getElementById('stop-voice-btn');
   if (stopVoiceBtn) stopVoiceBtn.classList.remove('visible');
   state._ttsSpeaking = false;
   state._ttsOnDone   = null;
 
-  // Reset timer display to full 90s immediately so it shows the right value
-  // while TTS is speaking, but don't start counting yet
+  // Reset timer display to the actual limit for this question
   stopTimer();
   const circle = document.getElementById('timer-circle');
   const circumference = 2 * Math.PI * 20;
   if (circle) { circle.style.strokeDashoffset = 0; circle.style.stroke = 'var(--green)'; }
-  document.getElementById('timer-text').textContent = '90';
+  document.getElementById('timer-text').textContent = limit;
   document.getElementById('timer-text').style.color = 'var(--text)';
 
   document.getElementById('answer-input').disabled = true;
@@ -1746,18 +1783,17 @@ function displayQuestion(question, qNum, difficulty) {
     card.style.transform = 'translateY(0)';
   }, 50);
 
-  // Timer starts only after TTS finishes (or when user clicks Stop Voice)
+  // Timer starts only after TTS finishes (or Stop Voice is clicked)
   speakQuestion(question, () => {
-    setStatus(`Question ${qNum} / ${state.totalQuestions} — answer now`);
-    startTimer(90);
+    setStatus(`Question ${qNum} / ${state.totalQuestions} — answer now (${limit}s)`);
+    startTimer(limit);
   });
 
   setStatus(`🔊 Speaking question ${qNum} / ${state.totalQuestions}...`);
 }
 
-// ── FIX 2: helper to reset record button to its default state ─────────────────
+// ── helper to reset record button ─────────────────────────────────────────────
 function resetRecordButton() {
-  // Stop any ongoing recognition first
   if (state.isRecording) {
     state.isRecording = false;
     if (speechRecognition) {
@@ -1777,7 +1813,6 @@ async function submitAnswer(auto = false) {
   stopTimer();
   window.speechSynthesis.cancel();
 
-  // FIX 2: stop recording if active when submit is clicked
   if (state.isRecording) {
     stopSpeechRecognition();
   }
@@ -1807,6 +1842,8 @@ async function submitAnswer(auto = false) {
         question: data.next_question,
         number: data.next_question_number,
         difficulty: data.next_difficulty,
+        // ── CHANGE 2: store next question's time limit ──
+        timeLimit: data.next_time_limit || 90,
       };
     } else {
       state.pendingNext = null;
@@ -1829,7 +1866,7 @@ async function submitAnswer(auto = false) {
   }
 }
 
-// ── Skip Question — show notice + OK immediately, API runs in background ───────
+// ── Skip Question ──────────────────────────────────────────────────────────────
 function skipQuestion() {
   stopTimer();
   window.speechSynthesis.cancel();
@@ -1848,19 +1885,16 @@ function skipQuestion() {
   document.getElementById('record-btn').disabled = true;
   document.getElementById('answer-input').disabled = true;
 
-  // Show notice with OK button enabled right away — no loading state
   const notice = document.getElementById('skip-notice');
   const okBtn  = document.getElementById('skip-ok-btn');
   okBtn.disabled = false;
   okBtn.textContent = 'OK, Got It →';
   notice.classList.add('active');
 
-  // Track whether API result is ready and whether user already clicked OK
   state._skipResult  = null;
   state._skipReady   = false;
   state._skipOkEarly = false;
 
-  // Fire API in background — does NOT block the notice from showing
   fetch('/api/skip', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1875,12 +1909,13 @@ function skipQuestion() {
           question: data.next_question,
           number: data.next_question_number,
           difficulty: data.next_difficulty,
+          // ── CHANGE 2: store next question's time limit ──
+          timeLimit: data.next_time_limit || 90,
         };
       } else {
         state.pendingNext = null;
       }
       addHistoryBar(0);
-      // If user clicked OK before API finished, proceed now
       if (state._skipOkEarly) _doSkipProceed(data);
     })
     .catch(err => {
@@ -1898,7 +1933,6 @@ function skipQuestion() {
 
 function skipProceed() {
   if (!state._skipReady) {
-    // API not back yet — mark that user clicked, proceed when it arrives
     state._skipOkEarly = true;
     const okBtn = document.getElementById('skip-ok-btn');
     okBtn.disabled = true;
@@ -1922,8 +1956,10 @@ function _doSkipProceed(data) {
     state.currentQuestion = state.pendingNext.question;
     state.questionNumber  = state.pendingNext.number;
     state.difficulty      = state.pendingNext.difficulty;
-    state.pendingNext     = null;
-    displayQuestion(state.currentQuestion, state.questionNumber, state.difficulty);
+    // ── CHANGE 2: pass time limit through ──
+    const tl = state.pendingNext.timeLimit || 90;
+    state.pendingNext = null;
+    displayQuestion(state.currentQuestion, state.questionNumber, state.difficulty, tl);
   } else {
     fetchReport();
   }
@@ -1972,9 +2008,11 @@ function continueInterview() {
     state.currentQuestion = state.pendingNext.question;
     state.questionNumber = state.pendingNext.number;
     state.difficulty = state.pendingNext.difficulty;
+    // ── CHANGE 2: pass time limit through ──
+    const tl = state.pendingNext.timeLimit || 90;
     state.pendingNext = null;
     showScreen('interview');
-    displayQuestion(state.currentQuestion, state.questionNumber, state.difficulty);
+    displayQuestion(state.currentQuestion, state.questionNumber, state.difficulty, tl);
   }
 }
 
@@ -2022,7 +2060,6 @@ function displayReport(report) {
     bar.className = 'trend-bar';
     const pct = (score / maxScore) * 100;
     bar.style.height = Math.max(2, pct) + '%';
-    // FIX 5: skipped questions (score === 0) shown in muted colour to visually flag them
     bar.style.background = score === 0 ? 'var(--muted2)' : scoreColor(score);
     bar.innerHTML = `<span class="tb-val" style="color:${score === 0 ? 'var(--muted)' : 'var(--text)'}">${score === 0 ? 'skip' : score}</span><span class="tb-label">Q${i + 1}</span>`;
     trendContainer.appendChild(bar);
@@ -2358,7 +2395,6 @@ function timestamp() {
 // ── Restart ────────────────────────────────────────────────────────────────────
 function restartInterview() {
   window.speechSynthesis.cancel();
-  // FIX 2: ensure recording is stopped on restart too
   if (state.isRecording) {
     state.isRecording = false;
     if (speechRecognition) { try { speechRecognition.stop(); } catch(e) {} }
@@ -2368,6 +2404,7 @@ function restartInterview() {
   state.questionNumber = 0;
   state.pendingNext = null;
   state.report = null;
+  state.currentTimeLimit = 90;
   state._skipResult  = null;
   state._skipReady   = false;
   state._skipOkEarly = false;

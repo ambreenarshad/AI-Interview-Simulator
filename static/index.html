@@ -7,7 +7,6 @@
 <title>AI Interview Simulator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root {
     --bg: #060810;
@@ -423,6 +422,28 @@
     0%, 100% { transform: scaleY(1); opacity: 1; }
     50%       { transform: scaleY(0.4); opacity: 0.5; }
   }
+
+  /* Stop Voice button — visible only while TTS is speaking */
+  .stop-voice-btn {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    background: transparent;
+    border: 1px solid rgba(247,111,111,0.5);
+    border-radius: 4px;
+    color: var(--red);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .stop-voice-btn:hover { background: rgba(247,111,111,0.1); border-color: var(--red); }
+  .tts-indicator.speaking ~ .stop-voice-btn,
+  .stop-voice-btn.visible { display: flex; }
 
   .answer-area {
     flex: 1;
@@ -1137,6 +1158,55 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--muted2); }
+
+  /* ── Question count slider ── */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .q-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+  .q-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 0 3px var(--accent-glow);
+    transition: box-shadow 0.2s;
+  }
+  .q-slider::-webkit-slider-thumb:hover { box-shadow: 0 0 0 6px var(--accent-glow); }
+  .q-slider::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: none;
+  }
+  .q-count-badge {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--green);
+    min-width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .slider-range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 6px;
+    padding: 0 2px;
+  }
 </style>
 </head>
 <body>
@@ -1178,10 +1248,10 @@
       </label>
       <label class="save-option" id="opt-pdf">
         <input type="checkbox" id="chk-pdf">
-        <span class="save-option-icon">📋</span>
+        <span class="save-option-icon">🌐</span>
         <div class="save-option-info">
-          <div class="save-option-name">PDF</div>
-          <div class="save-option-desc">FORMATTED REPORT · HUMAN-READABLE · SHAREABLE</div>
+          <div class="save-option-name">HTML</div>
+          <div class="save-option-desc">FORMATTED REPORT · OPENS IN BROWSER · PRINTABLE</div>
         </div>
       </label>
     </div>
@@ -1194,7 +1264,7 @@
   </div>
 </div>
 
-<!-- ── SCREEN 1: Welcome ── -->
+
 <div class="screen active" id="welcome">
   <div style="width:100%;max-width:560px;">
     <div class="logo-area">
@@ -1229,12 +1299,18 @@
         </div>
       </div>
 
-      <!-- FIX 4: show 5 questions -->
-      <div class="info-row">
-        <div class="info-chip">
-          <span class="num">5</span>
-          <span class="lbl">Questions</span>
+      <div class="field-group">
+        <label class="field-label">Number of Questions</label>
+        <div class="slider-row">
+          <input type="range" class="q-slider" id="q-count-slider"
+            min="3" max="15" value="5" step="1"
+            oninput="document.getElementById('q-count-badge').textContent=this.value">
+          <div class="q-count-badge" id="q-count-badge">5</div>
         </div>
+        <div class="slider-range-labels"><span>3</span><span>15</span></div>
+      </div>
+
+      <div class="info-row">
         <div class="info-chip">
           <span class="num">4</span>
           <span class="lbl">Score Dimensions</span>
@@ -1274,7 +1350,7 @@
     <div class="int-main">
       <div class="int-left">
         <div class="question-card fade-in" id="question-card">
-          <div class="question-label">Question <span id="q-num-label">1</span> of 5</div>
+          <div class="question-label">Question <span id="q-num-label">1</span> of <span id="q-total-label">5</span></div>
           <div class="question-text" id="question-text">Loading question...</div>
           <div class="tts-indicator" id="tts-indicator">
             <div class="tts-wave">
@@ -1282,6 +1358,7 @@
             </div>
             SPEAKING QUESTION...
           </div>
+          <button class="stop-voice-btn" id="stop-voice-btn" onclick="stopVoice()">⏹ Stop Voice</button>
         </div>
 
         <div class="answer-area">
@@ -1409,7 +1486,7 @@ const state = {
   sessionId: null,
   currentQuestion: '',
   questionNumber: 0,
-  totalQuestions: 5,   // FIX 4: 5 questions
+  totalQuestions: 5,
   interviewType: 'HR',
   difficulty: 'medium',
   pendingNext: null,
@@ -1420,8 +1497,10 @@ const state = {
   mediaRecorder: null,
   audioChunks: [],
   _skipResult: null,
-  _skipLoading: false,
-  _skipOkClicked: false,
+  _skipReady: false,
+  _skipOkEarly: false,
+  _ttsSpeaking: false,
+  _ttsOnDone: null,
 };
 
 // ── Utility ────────────────────────────────────────────────────────────────────
@@ -1465,7 +1544,12 @@ document.querySelectorAll('.type-btn').forEach(btn => {
 function speakQuestion(text, onDone) {
   window.speechSynthesis.cancel();
 
-  const indicator = document.getElementById('tts-indicator');
+  const indicator  = document.getElementById('tts-indicator');
+  const stopVoiceBtn = document.getElementById('stop-voice-btn');
+
+  // Store onDone so stopVoice() can call it
+  state._ttsOnDone = onDone;
+  state._ttsSpeaking = true;
 
   document.getElementById('submit-btn').disabled = true;
   document.getElementById('skip-btn').disabled = true;
@@ -1475,11 +1559,14 @@ function speakQuestion(text, onDone) {
   if (!window.speechSynthesis) {
     setStatus('TTS not supported in this browser. Read the question above.');
     if (indicator) indicator.classList.remove('speaking');
+    if (stopVoiceBtn) stopVoiceBtn.classList.remove('visible');
+    state._ttsSpeaking = false;
     if (onDone) onDone();
     return;
   }
 
   if (indicator) indicator.classList.add('speaking');
+  if (stopVoiceBtn) stopVoiceBtn.classList.add('visible');
   setStatus('🔊 Listening to question...');
 
   const utterance = new SpeechSynthesisUtterance(text);
@@ -1488,26 +1575,47 @@ function speakQuestion(text, onDone) {
   utterance.pitch = 1.0;
   utterance.volume = 1.0;
 
-  utterance.onend = () => {
+  function _finishTTS() {
+    if (!state._ttsSpeaking) return; // already handled by stopVoice
+    state._ttsSpeaking = false;
     if (indicator) indicator.classList.remove('speaking');
+    if (stopVoiceBtn) stopVoiceBtn.classList.remove('visible');
     document.getElementById('submit-btn').disabled = false;
     document.getElementById('skip-btn').disabled = false;
     document.getElementById('record-btn').disabled = false;
     document.getElementById('answer-input').disabled = false;
-    if (onDone) onDone();
-  };
+    if (state._ttsOnDone) { state._ttsOnDone(); state._ttsOnDone = null; }
+  }
 
+  utterance.onend  = _finishTTS;
   utterance.onerror = () => {
-    if (indicator) indicator.classList.remove('speaking');
-    document.getElementById('submit-btn').disabled = false;
-    document.getElementById('skip-btn').disabled = false;
-    document.getElementById('record-btn').disabled = false;
-    document.getElementById('answer-input').disabled = false;
     setStatus('TTS error — read the question above and type/record your answer.');
-    if (onDone) onDone();
+    _finishTTS();
   };
 
   window.speechSynthesis.speak(utterance);
+}
+
+// Called when user clicks "Stop Voice" — cancel speech, enable controls, start timer
+function stopVoice() {
+  if (!state._ttsSpeaking) return;
+  state._ttsSpeaking = false;
+  window.speechSynthesis.cancel();
+
+  const indicator    = document.getElementById('tts-indicator');
+  const stopVoiceBtn = document.getElementById('stop-voice-btn');
+  if (indicator) indicator.classList.remove('speaking');
+  if (stopVoiceBtn) stopVoiceBtn.classList.remove('visible');
+
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('skip-btn').disabled = false;
+  document.getElementById('record-btn').disabled = false;
+  document.getElementById('answer-input').disabled = false;
+
+  setStatus(`Voice stopped — type or record your answer.`);
+
+  // Call onDone (which is startTimer) so the timer begins immediately
+  if (state._ttsOnDone) { state._ttsOnDone(); state._ttsOnDone = null; }
 }
 
 // ── Timer ──────────────────────────────────────────────────────────────────────
@@ -1561,6 +1669,7 @@ function updateProgressTrack(current, total) {
 async function startInterview() {
   const role = document.getElementById('role-select').value;
   const type = state.interviewType;
+  const numQ = parseInt(document.getElementById('q-count-slider').value, 10);
 
   showLoading('STARTING INTERVIEW');
   document.getElementById('start-btn').disabled = true;
@@ -1569,7 +1678,7 @@ async function startInterview() {
     const res = await fetch('/api/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role, interview_type: type }),
+      body: JSON.stringify({ role, interview_type: type, num_questions: numQ }),
     });
 
     if (!res.ok) throw new Error('Failed to start');
@@ -1596,10 +1705,26 @@ async function startInterview() {
 function displayQuestion(question, qNum, difficulty) {
   document.getElementById('question-text').textContent = question;
   document.getElementById('q-num-label').textContent = qNum;
+  document.getElementById('q-total-label').textContent = state.totalQuestions;
   document.getElementById('answer-input').value = '';
 
-  // FIX 2: always reset record button to default state on each new question
+  // always reset record button to default state on each new question
   resetRecordButton();
+
+  // Reset stop-voice button state for new question
+  const stopVoiceBtn = document.getElementById('stop-voice-btn');
+  if (stopVoiceBtn) stopVoiceBtn.classList.remove('visible');
+  state._ttsSpeaking = false;
+  state._ttsOnDone   = null;
+
+  // Reset timer display to full 90s immediately so it shows the right value
+  // while TTS is speaking, but don't start counting yet
+  stopTimer();
+  const circle = document.getElementById('timer-circle');
+  const circumference = 2 * Math.PI * 20;
+  if (circle) { circle.style.strokeDashoffset = 0; circle.style.stroke = 'var(--green)'; }
+  document.getElementById('timer-text').textContent = '90';
+  document.getElementById('timer-text').style.color = 'var(--text)';
 
   document.getElementById('answer-input').disabled = true;
   document.getElementById('submit-btn').disabled = true;
@@ -1612,8 +1737,6 @@ function displayQuestion(question, qNum, difficulty) {
 
   updateProgressTrack(qNum, state.totalQuestions);
 
-  setStatus(`🔊 Speaking question ${qNum} / ${state.totalQuestions}...`);
-
   const card = document.getElementById('question-card');
   card.style.opacity = '0';
   card.style.transform = 'translateY(10px)';
@@ -1623,10 +1746,13 @@ function displayQuestion(question, qNum, difficulty) {
     card.style.transform = 'translateY(0)';
   }, 50);
 
+  // Timer starts only after TTS finishes (or when user clicks Stop Voice)
   speakQuestion(question, () => {
     setStatus(`Question ${qNum} / ${state.totalQuestions} — answer now`);
     startTimer(90);
   });
+
+  setStatus(`🔊 Speaking question ${qNum} / ${state.totalQuestions}...`);
 }
 
 // ── FIX 2: helper to reset record button to its default state ─────────────────
@@ -1703,41 +1829,47 @@ async function submitAnswer(auto = false) {
   }
 }
 
-// ── Skip Question — show notice immediately, fire API in background ───────────
+// ── Skip Question — show notice + OK immediately, API runs in background ───────
 function skipQuestion() {
   stopTimer();
   window.speechSynthesis.cancel();
-
-  if (state.isRecording) {
-    stopSpeechRecognition();
+  if (state._ttsSpeaking) {
+    state._ttsSpeaking = false;
+    const ind = document.getElementById('tts-indicator');
+    const svb = document.getElementById('stop-voice-btn');
+    if (ind) ind.classList.remove('speaking');
+    if (svb) svb.classList.remove('visible');
+    state._ttsOnDone = null;
   }
+  if (state.isRecording) stopSpeechRecognition();
 
   document.getElementById('submit-btn').disabled = true;
   document.getElementById('skip-btn').disabled = true;
   document.getElementById('record-btn').disabled = true;
   document.getElementById('answer-input').disabled = true;
 
-  // Show the notice right away — OK button is active immediately
+  // Show notice with OK button enabled right away — no loading state
   const notice = document.getElementById('skip-notice');
   const okBtn  = document.getElementById('skip-ok-btn');
   okBtn.disabled = false;
   okBtn.textContent = 'OK, Got It →';
   notice.classList.add('active');
 
-  // Mark that the API result is not yet ready
-  state._skipResult = null;
-  state._skipLoading = true;
+  // Track whether API result is ready and whether user already clicked OK
+  state._skipResult  = null;
+  state._skipReady   = false;
+  state._skipOkEarly = false;
 
-  // Fire API call in background — don't await here
+  // Fire API in background — does NOT block the notice from showing
   fetch('/api/skip', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ session_id: state.sessionId }),
   })
-    .then(res => { if (!res.ok) throw new Error('Skip failed'); return res.json(); })
+    .then(r => { if (!r.ok) throw new Error('Skip failed'); return r.json(); })
     .then(data => {
       state._skipResult = data;
-      state._skipLoading = false;
+      state._skipReady  = true;
       if (data.next_question) {
         state.pendingNext = {
           question: data.next_question,
@@ -1748,50 +1880,45 @@ function skipQuestion() {
         state.pendingNext = null;
       }
       addHistoryBar(0);
-      // If user already clicked OK while API was loading, proceed now
-      if (state._skipOkClicked) {
-        state._skipOkClicked = false;
-        _doSkipProceed(data);
-      }
+      // If user clicked OK before API finished, proceed now
+      if (state._skipOkEarly) _doSkipProceed(data);
     })
     .catch(err => {
-      state._skipLoading = false;
       notice.classList.remove('active');
-      state._skipResult = null;
+      state._skipResult  = null;
+      state._skipReady   = false;
+      state._skipOkEarly = false;
       setStatus('Error: ' + err.message);
       document.getElementById('submit-btn').disabled = false;
       document.getElementById('skip-btn').disabled = false;
       document.getElementById('record-btn').disabled = false;
       document.getElementById('answer-input').disabled = false;
-      startTimer(state.timerSeconds);
     });
 }
 
-// Called when user clicks OK on the skip notice
 function skipProceed() {
-  // If API still loading, mark the click and wait — _doSkipProceed called automatically when ready
-  if (state._skipLoading) {
+  if (!state._skipReady) {
+    // API not back yet — mark that user clicked, proceed when it arrives
+    state._skipOkEarly = true;
     const okBtn = document.getElementById('skip-ok-btn');
     okBtn.disabled = true;
-    okBtn.textContent = 'Loading...';
-    state._skipOkClicked = true;
+    okBtn.textContent = 'Please wait...';
     return;
   }
-  const data = state._skipResult;
-  state._skipResult = null;
-  if (!data) return;
-  _doSkipProceed(data);
+  _doSkipProceed(state._skipResult);
 }
 
 function _doSkipProceed(data) {
   const notice = document.getElementById('skip-notice');
   notice.classList.remove('active');
-  // reset OK button for next time
   const okBtn = document.getElementById('skip-ok-btn');
   okBtn.disabled = false;
   okBtn.textContent = 'OK, Got It →';
+  state._skipResult  = null;
+  state._skipReady   = false;
+  state._skipOkEarly = false;
 
-  if (!data.is_last && state.pendingNext) {
+  if (data && !data.is_last && state.pendingNext) {
     state.currentQuestion = state.pendingNext.question;
     state.questionNumber  = state.pendingNext.number;
     state.difficulty      = state.pendingNext.difficulty;
@@ -2071,178 +2198,157 @@ function saveReportJSON() {
   URL.revokeObjectURL(url);
 }
 
-// ── PDF download — true .pdf file via jsPDF ───────────────────────────────────
 function saveReportPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const report = state.report;
   const avg    = report.average_scores;
   const ts     = new Date().toLocaleString();
-  const PW     = doc.internal.pageSize.getWidth();   // 595
-  const PH     = doc.internal.pageSize.getHeight();  // 842
-  const ML     = 48, MR = 48, TW = PW - ML - MR;
-  let y = 48;
 
-  // ── helpers ──
-  function checkPage(needed = 20) {
-    if (y + needed > PH - 40) { doc.addPage(); y = 48; }
+  function scoreCol(v) {
+    if (v >= 8) return '#2dd4a0';
+    if (v >= 5) return '#f7b94f';
+    return '#f76f6f';
   }
-  function hline(col = '#1e2640') {
-    doc.setDrawColor(col);
-    doc.setLineWidth(0.5);
-    doc.line(ML, y, PW - MR, y);
-    y += 8;
-  }
-  function sectionTitle(txt) {
-    checkPage(28);
-    hline('#cccccc');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor('#888888');
-    doc.text(txt.toUpperCase(), ML, y);
-    y += 14;
-  }
-  function bodyText(txt, color = '#222222', size = 10, maxW = TW) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(size);
-    doc.setTextColor(color);
-    const lines = doc.splitTextToSize(txt, maxW);
-    lines.forEach(line => {
-      checkPage(14);
-      doc.text(line, ML, y);
-      y += 13;
-    });
-  }
-  function scoreChip(label, val, x, w) {
-    const col = val >= 8 ? '#2dd4a0' : val >= 5 ? '#f7b94f' : '#f76f6f';
-    doc.setFillColor('#f5f7ff');
-    doc.roundedRect(x, y, w, 44, 4, 4, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor(col);
-    doc.text(String(val), x + w / 2, y + 24, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor('#888888');
-    doc.text(label.toUpperCase(), x + w / 2, y + 38, { align: 'center' });
+  function scoreBg(v) {
+    if (v >= 8) return 'rgba(45,212,160,0.12)';
+    if (v >= 5) return 'rgba(247,185,79,0.12)';
+    return 'rgba(247,111,111,0.12)';
   }
 
-  // ── Title block ──
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.setTextColor('#0d1120');
-  doc.text('Interview Report', ML, y);
-  y += 18;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor('#888888');
-  doc.text(`Role: ${report.role}  ·  Type: ${report.interview_type}  ·  ${ts}`, ML, y);
-  y += 20;
+  const scoreCards = [['Clarity',avg.clarity],['Relevance',avg.relevance],['Depth',avg.depth],['Structure',avg.structure],['Overall',avg.overall]]
+    .map(([l,v]) => `
+      <div style="background:#131829;border:1px solid ${scoreCol(v)}44;border-radius:10px;padding:18px 12px;text-align:center;">
+        <div style="font-size:32px;font-weight:800;color:${scoreCol(v)};line-height:1;">${v}</div>
+        <div style="font-size:10px;color:#5a6380;letter-spacing:2px;text-transform:uppercase;margin-top:6px;">${l}</div>
+      </div>`).join('');
 
-  // ── Tier ──
-  const tierCol = avg.overall >= 8 ? '#2dd4a0' : avg.overall >= 6 ? '#4f8ef7' : avg.overall >= 4 ? '#f7b94f' : '#f76f6f';
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.setTextColor(tierCol);
-  doc.text(report.performance_tier, ML, y);
-  y += 14;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor('#666666');
-  doc.text(report.tier_message, ML, y);
-  y += 22;
+  const tierColor = avg.overall >= 8 ? '#2dd4a0' : avg.overall >= 6 ? '#4f8ef7' : avg.overall >= 4 ? '#f7b94f' : '#f76f6f';
 
-  // ── Average scores ──
-  sectionTitle('Average Scores');
-  const chipW = (TW - 8 * 4) / 5;
-  [['Clarity', avg.clarity], ['Relevance', avg.relevance], ['Depth', avg.depth], ['Structure', avg.structure], ['Overall', avg.overall]]
-    .forEach(([lbl, val], i) => scoreChip(lbl, val, ML + i * (chipW + 8), chipW));
-  y += 52;
+  const trendBars = (report.score_trend || []).map((s, i) => {
+    const h = Math.max(4, (s / 10) * 64);
+    const c = s === 0 ? '#3a4060' : scoreCol(s);
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;">
+        <div style="font-size:10px;color:${s===0?'#5a6380':c};font-weight:700;">${s===0?'–':s}</div>
+        <div style="width:100%;height:${h}px;background:${c};border-radius:3px 3px 0 0;"></div>
+        <div style="font-size:9px;color:#5a6380;">Q${i+1}</div>
+      </div>`;
+  }).join('');
 
-  // ── AI Assessment ──
-  sectionTitle('AI Assessment');
-  doc.setFillColor('#f7faff');
-  const summaryLines = doc.splitTextToSize(report.ai_summary || 'N/A', TW - 16);
-  const summaryH = summaryLines.length * 13 + 16;
-  checkPage(summaryH + 10);
-  doc.roundedRect(ML, y, TW, summaryH, 4, 4, 'F');
-  doc.setDrawColor('#4f8ef7');
-  doc.setLineWidth(1);
-  doc.roundedRect(ML, y, TW, summaryH, 4, 4, 'S');
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor('#222222');
-  summaryLines.forEach((line, li) => { doc.text(line, ML + 8, y + 12 + li * 13); });
-  y += summaryH + 14;
-
-  // ── Question-by-question ──
-  sectionTitle('Question-by-Question');
-  (report.qa_records || []).forEach((r, i) => {
-    const skipped = !r.answer;
+  const qaBlocks = (report.qa_records || []).map((r, i) => {
     const ev = r.evaluation;
-    checkPage(60);
-    // question header
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor('#1a2040');
-    const qLabel = `Q${i + 1}: `;
-    const qText  = doc.splitTextToSize(qLabel + r.question, TW);
-    qText.forEach(line => { checkPage(14); doc.text(line, ML, y); y += 13; });
-    if (skipped) {
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(9);
-      doc.setTextColor('#f7b94f');
-      checkPage(14);
-      doc.text('[SKIPPED — no answer provided]', ML + 8, y);
-      y += 14;
-    } else {
-      // answer
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor('#444444');
-      const aLines = doc.splitTextToSize(r.answer, TW - 8);
-      aLines.forEach(line => { checkPage(13); doc.text(line, ML + 8, y); y += 12; });
-      // scores inline
-      checkPage(14);
-      doc.setFontSize(8);
-      doc.setTextColor('#888888');
-      doc.text(
-        `Clarity: ${ev.clarity}  Relevance: ${ev.relevance}  Depth: ${ev.depth}  Structure: ${ev.structure}  Overall: ${ev.overall}`,
-        ML + 8, y
-      );
-      y += 14;
-    }
-    y += 4;
-    hline('#eeeeee');
-  });
+    const skipped = !r.answer;
+    const scores = skipped ? '' : `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        ${[['Clarity',ev.clarity],['Relevance',ev.relevance],['Depth',ev.depth],['Structure',ev.structure],['Overall',ev.overall]].map(([l,v])=>`
+          <span style="font-size:10px;padding:3px 10px;border-radius:20px;background:${scoreBg(v)};color:${scoreCol(v)};border:1px solid ${scoreCol(v)}44;">${l}: ${v}</span>`).join('')}
+      </div>`;
+    return `
+      <div style="background:#0d1120;border:1px solid #1e2640;border-radius:10px;padding:20px;margin-bottom:12px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+          <span style="background:#1e2640;color:#4f8ef7;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;white-space:nowrap;flex-shrink:0;">Q${i+1}</span>
+          ${skipped ? '<span style="background:rgba(247,185,79,0.15);color:#f7b94f;font-size:10px;padding:3px 10px;border-radius:20px;border:1px solid rgba(247,185,79,0.3);">SKIPPED</span>' : ''}
+          <span style="font-size:13px;font-weight:600;color:#e8edf8;line-height:1.5;">${r.question}</span>
+        </div>
+        ${skipped
+          ? '<div style="font-size:12px;color:#3a4060;font-style:italic;">No answer provided.</div>'
+          : `<div style="font-size:12px;color:#8892aa;line-height:1.7;white-space:pre-wrap;padding:12px;background:#060810;border-radius:6px;border-left:3px solid #1e2640;">${r.answer}</div>${scores}`}
+      </div>`;
+  }).join('');
 
-  // ── Strengths / Weaknesses / Suggestions ──
-  [
-    ['Overall Strengths', report.overall_strengths, '#2dd4a0'],
-    ['Areas to Improve',  report.overall_weaknesses, '#f76f6f'],
-    ['Suggestions',       report.overall_suggestions, '#f7b94f'],
-  ].forEach(([heading, items, col]) => {
-    sectionTitle(heading);
-    (items || []).forEach((item, i) => {
-      if (!item) return;
-      checkPage(14);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(col);
-      doc.text(`Q${i + 1}:`, ML, y);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor('#333333');
-      const iLines = doc.splitTextToSize(item, TW - 24);
-      iLines.forEach((line, li) => {
-        checkPage(13);
-        doc.text(line, ML + 24, y);
-        y += 13;
-      });
-    });
-    y += 6;
-  });
+  function detailSection(title, color, items) {
+    if (!items || !items.length) return '';
+    const rows = items.map((item,i) => item ? `
+      <div style="padding:12px 0;border-bottom:1px solid #1e2640;display:flex;gap:10px;align-items:flex-start;">
+        <span style="color:${color};font-size:10px;font-weight:700;white-space:nowrap;padding-top:1px;">Q${i+1}</span>
+        <span style="font-size:12px;color:#8892aa;line-height:1.6;">${item}</span>
+      </div>` : '').join('');
+    return `
+      <div style="background:#0d1120;border:1px solid #1e2640;border-radius:10px;padding:20px;flex:1;min-width:0;">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${color};margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #1e2640;">${title}</div>
+        ${rows}
+      </div>`;
+  }
 
-  doc.save(`interview_report_${timestamp()}.pdf`);
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Interview Report — ${report.role}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#060810;color:#e8edf8;font-family:'JetBrains Mono',monospace;min-height:100vh;
+    background-image:linear-gradient(rgba(79,142,247,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,0.03) 1px,transparent 1px);
+    background-size:40px 40px;}
+  ::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-thumb{background:#1e2640;border-radius:2px;}
+</style>
+</head>
+<body>
+<div style="max-width:860px;margin:0 auto;padding:48px 28px;">
+
+  <!-- Header -->
+  <div style="margin-bottom:40px;">
+    <div style="display:inline-block;font-size:10px;font-weight:500;color:#4f8ef7;background:rgba(79,142,247,0.12);border:1px solid rgba(79,142,247,0.25);padding:4px 14px;border-radius:2px;letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;">Interview Report</div>
+    <div style="font-family:'Syne',sans-serif;font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#e8edf8 30%,#4f8ef7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1;margin-bottom:10px;">${report.role}</div>
+    <div style="font-size:11px;color:#5a6380;letter-spacing:1px;">${report.interview_type} Interview &nbsp;·&nbsp; ${report.total_questions} Questions &nbsp;·&nbsp; ${ts}</div>
+  </div>
+
+  <!-- Tier -->
+  <div style="background:#0d1120;border:1px solid ${tierColor}44;border-radius:12px;padding:24px 28px;margin-bottom:24px;display:flex;align-items:center;gap:20px;">
+    <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:${tierColor};">${report.performance_tier}</div>
+    <div style="font-size:12px;color:#8892aa;line-height:1.6;">${report.tier_message}</div>
+  </div>
+
+  <!-- Score Cards -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px;">
+    ${scoreCards}
+  </div>
+
+  <!-- Trend -->
+  <div style="background:#0d1120;border:1px solid #1e2640;border-radius:12px;padding:24px;margin-bottom:24px;">
+    <div style="font-size:10px;font-weight:500;letter-spacing:2px;color:#5a6380;text-transform:uppercase;margin-bottom:20px;">Performance Trend</div>
+    <div style="display:flex;align-items:flex-end;gap:8px;height:80px;">
+      ${trendBars}
+    </div>
+  </div>
+
+  <!-- AI Summary -->
+  <div style="background:#0d1120;border:1px solid rgba(79,142,247,0.35);border-radius:12px;padding:24px;margin-bottom:24px;position:relative;">
+    <div style="position:absolute;top:-9px;left:16px;background:#060810;padding:0 10px;font-size:9px;letter-spacing:2px;color:#4f8ef7;text-transform:uppercase;">AI Assessment</div>
+    <div style="font-size:13px;line-height:1.85;color:#c8d0e0;">${report.ai_summary || 'No summary available.'}</div>
+  </div>
+
+  <!-- Q&A -->
+  <div style="margin-bottom:24px;">
+    <div style="font-size:10px;font-weight:500;letter-spacing:2px;color:#5a6380;text-transform:uppercase;margin-bottom:14px;">Question by Question</div>
+    ${qaBlocks}
+  </div>
+
+  <!-- Detail panels -->
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:40px;">
+    ${detailSection('Strengths', '#2dd4a0', report.overall_strengths)}
+    ${detailSection('To Improve', '#f76f6f', report.overall_weaknesses)}
+    ${detailSection('Suggestions', '#f7b94f', report.overall_suggestions)}
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center;font-size:10px;color:#3a4060;letter-spacing:2px;padding-top:20px;border-top:1px solid #1e2640;">
+    AI INTERVIEW SIMULATOR &nbsp;·&nbsp; GENERATED ${ts}
+  </div>
+
+</div>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `interview_report_${timestamp()}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function timestamp() {
@@ -2262,9 +2368,11 @@ function restartInterview() {
   state.questionNumber = 0;
   state.pendingNext = null;
   state.report = null;
-  state._skipResult = null;
-  state._skipLoading = false;
-  state._skipOkClicked = false;
+  state._skipResult  = null;
+  state._skipReady   = false;
+  state._skipOkEarly = false;
+  state._ttsSpeaking = false;
+  state._ttsOnDone   = null;
   stopTimer();
 
   document.getElementById('history-bars').innerHTML = '';

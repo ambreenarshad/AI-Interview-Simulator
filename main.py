@@ -8,9 +8,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
 import uuid
-import asyncio
+import json
 from datetime import datetime
-from functools import partial
 
 from agents.interviewer_agent import generate_question
 from agents.evaluator_agent import evaluate_answer
@@ -31,6 +30,7 @@ TOTAL_QUESTIONS = 5
 class StartRequest(BaseModel):
     role: str
     interview_type: str  # HR, Technical, Mixed
+    num_questions: int = 5  # slider value 3-15
 
 class SubmitAnswerRequest(BaseModel):
     session_id: str
@@ -38,6 +38,10 @@ class SubmitAnswerRequest(BaseModel):
 
 class SkipQuestionRequest(BaseModel):
     session_id: str
+
+class ExtendRequest(BaseModel):
+    session_id: str
+    extra_questions: int
 
 # ── Routes ─────────────────────────────────────────────────────────────────────
 
@@ -50,6 +54,8 @@ async def start_interview(req: StartRequest):
     """Create a new interview session and return the first question."""
     session_id = str(uuid.uuid4())
     session = InterviewSession(role=req.role, interview_type=req.interview_type)
+    total = max(3, min(req.num_questions, 15))
+    session.total_questions = total
     sessions[session_id] = session
 
     # Generate first question
@@ -67,7 +73,7 @@ async def start_interview(req: StartRequest):
         "session_id": session_id,
         "question": question,
         "question_number": 1,
-        "total_questions": TOTAL_QUESTIONS,
+        "total_questions": total,
         "difficulty": "medium",
     }
 
@@ -89,7 +95,7 @@ async def submit_answer(req: SubmitAnswerRequest):
     # Record
     session.add_record(question, answer, evaluation, feedback)
 
-    is_last = session.question_number >= TOTAL_QUESTIONS
+    is_last = session.question_number >= session.total_questions
 
     result = {
         "evaluation": evaluation,
@@ -142,7 +148,7 @@ async def skip_question(req: SkipQuestionRequest):
     }
     session.add_record(question, "", skipped_evaluation, skipped_feedback)
 
-    is_last = session.question_number >= TOTAL_QUESTIONS
+    is_last = session.question_number >= session.total_questions
 
     result = {
         "question_number": session.question_number,
@@ -165,6 +171,35 @@ async def skip_question(req: SkipQuestionRequest):
         result["next_difficulty"] = session.current_difficulty
 
     return result
+
+
+@app.post("/api/extend")
+async def extend_interview(req: ExtendRequest):
+    """Extend the session with more questions after the original set is done."""
+    session = sessions.get(req.session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    extra = max(1, min(req.extra_questions, 20))
+    # Push the target forward by the requested amount
+    session.total_questions = session.question_number + extra
+
+    next_q = generate_question(
+        role=session.role,
+        difficulty=session.current_difficulty,
+        interview_type=session.interview_type,
+        previous_topics=session.questions_asked[-5:],
+        question_number=session.question_number + 1,
+    )
+    session.current_question = next_q
+    session.question_number += 1
+
+    return {
+        "total_questions": session.total_questions,
+        "next_question": next_q,
+        "next_question_number": session.question_number,
+        "next_difficulty": session.current_difficulty,
+    }
 
 
 @app.get("/api/report/{session_id}")

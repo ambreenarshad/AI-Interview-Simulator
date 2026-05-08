@@ -1,0 +1,5 @@
+{
+  "llama_vs_gemma": 0.9667,
+  "llama_vs_phi3": 0.3,
+  "gemma_vs_phi3": 0.2667
+}

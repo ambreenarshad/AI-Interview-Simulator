@@ -1,0 +1,743 @@
+(venv) PS D:\Semester 8\GenAI\AI-Interview-Simulator\benchmark> python run_benchmark.py
+
+=================================================================
+  AI Interview Simulator — Benchmark
+  Models  : llama, gemma, phi3, mistral
+  Samples : 30
+  Repeats : 3 (for consistency)
+=================================================================
+
+
+── Sample 1/30 │ Product Manager │ HR │ easy
+   Q: Can you describe a situation where you had to work closely with colleagues who w...
+
+   [1/120] Model: llama  │ ETA 19m 50s
+   Eval latency: 11.12s │ Overall: 8.25
+   Feedback latency: 59.6s │ ROUGE-L: 0.5243
+   Consistency σ: 0.3118 (runs: [8.25, 8.0, 7.5])
+
+   [2/120] Model: gemma  │ ETA 105m 22s
+   Eval latency: 21.73s │ Overall: 8.5
+   Feedback latency: 36.63s │ ROUGE-L: 0.5517
+   Consistency σ: 0.2041 (runs: [8.5, 8.25, 8.0])
+
+   [3/120] Model: phi3   │ ETA 121m 13s
+   Eval latency: 27.72s │ Overall: 8.5
+   Feedback latency: 85.75s │ ROUGE-L: 0.2199
+   Consistency σ: 1.6499 (runs: [8.5, 5.0, 5.0])
+
+   [4/120] Model: mistral │ ETA 223m 38s
+   Eval latency: 102.17s │ Overall: 9.0
+   Feedback latency: 113.8s │ ROUGE-L: 0.4464
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 2/30 │ Backend Developer │ HR │ easy
+   Q: Tell me about a time you had to collaborate with a team member who had a differe...
+
+   [5/120] Model: llama  │ ETA 298m 38s
+   Eval latency: 28.84s │ Overall: 8.25
+   Feedback latency: 48.51s │ ROUGE-L: 0.3188
+   Consistency σ: 0.3536 (runs: [8.25, 7.5, 8.25])
+
+   [6/120] Model: gemma  │ ETA 281m 19s
+   Eval latency: 20.93s │ Overall: 8.5
+   Feedback latency: 30.4s │ ROUGE-L: 0.5918
+   Consistency σ: 0.0 (runs: [8.5, 8.5, 8.5])
+
+   [7/120] Model: phi3   │ ETA 259m 14s
+   Eval latency: 58.31s │ Overall: 8.5
+   Feedback latency: 80.45s │ ROUGE-L: 0.2203
+   Consistency σ: 1.5943 (runs: [8.5, 8.25, 5.0])
+
+   [8/120] Model: mistral │ ETA 284m 49s
+   Eval latency: 79.14s │ Overall: 9.0
+   Feedback latency: 81.62s │ ROUGE-L: 0.4172
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 3/30 │ Data Scientist │ HR │ easy
+   Q: Can you describe a situation where you needed to collaborate effectively with co...
+
+   [9/120] Model: llama  │ ETA 303m 59s
+   Eval latency: 29.11s │ Overall: 7.5
+   Feedback latency: 53.97s │ ROUGE-L: 0.4714
+   Consistency σ: 0.3536 (runs: [7.5, 7.5, 8.25])
+
+   [10/120] Model: gemma  │ ETA 292m 32s
+   Eval latency: 20.86s │ Overall: 8.5
+   Feedback latency: 29.84s │ ROUGE-L: 0.441
+   Consistency σ: 0.0 (runs: [8.5, 8.5, 8.5])
+
+   [11/120] Model: phi3   │ ETA 276m 0s
+   Eval latency: 47.79s │ Overall: 5.0
+   Feedback latency: 111.42s │ ROUGE-L: 0.2016
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [12/120] Model: mistral │ ETA 296m 54s
+   Eval latency: 86.86s │ Overall: 9.5
+   Feedback latency: 112.96s │ ROUGE-L: 0.4
+   Consistency σ: 0.2357 (runs: [9.5, 9.0, 9.0])
+
+── Sample 4/30 │ Cybersecurity Analyst │ Technical │ easy
+   Q: What tools or software are you familiar with for performing vulnerability assess...
+
+   [13/120] Model: llama  │ ETA 315m 58s
+   Eval latency: 30.67s │ Overall: 7.5
+   Feedback latency: 57.38s │ ROUGE-L: 0.5337
+   Consistency σ: 0.3536 (runs: [7.5, 8.25, 7.5])
+
+   [14/120] Model: gemma  │ ETA 306m 26s
+   Eval latency: 21.65s │ Overall: 7.75
+   Feedback latency: 34.31s │ ROUGE-L: 0.249
+   Consistency σ: 0.1179 (runs: [7.75, 8.0, 8.0])
+
+   [15/120] Model: phi3   │ ETA 292m 34s
+   Eval latency: 120.02s │ Overall: 5.0
+   Feedback latency: 120.03s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [16/120] Model: mistral │ ETA 323m 40s
+   Eval latency: 80.19s │ Overall: 9.25
+   Feedback latency: 116.14s │ ROUGE-L: 0.491
+   Consistency σ: 0.2041 (runs: [9.25, 9.5, 9.0])
+
+── Sample 5/30 │ Machine Learning Engineer │ HR │ easy
+   Q: Can you tell me about a time when you had to collaborate with a cross-functional...
+
+   [17/120] Model: llama  │ ETA 332m 27s
+   Eval latency: 27.25s │ Overall: 7.5
+   Feedback latency: 60.0s │ ROUGE-L: 0.5027
+   Consistency σ: 0.3536 (runs: [7.5, 8.25, 7.5])
+
+   [18/120] Model: gemma  │ ETA 322m 35s
+   Eval latency: 20.59s │ Overall: 7.5
+   Feedback latency: 53.09s │ ROUGE-L: 0.5575
+   Consistency σ: 0.1179 (runs: [7.5, 7.75, 7.5])
+
+   [19/120] Model: phi3   │ ETA 311m 16s
+   Eval latency: 55.72s │ Overall: 8.0
+   Feedback latency: 80.84s │ ROUGE-L: 0.2987
+   Consistency σ: 0.2357 (runs: [8.0, 8.5, 8.5])
+
+   [20/120] Model: mistral │ ETA 312m 5s
+   Eval latency: 81.05s │ Overall: 9.0
+   Feedback latency: 120.03s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 6/30 │ Data Scientist │ HR │ easy
+   Q: Can you tell me about a project where you had to work with a cross-functional te...
+
+   [21/120] Model: llama  │ ETA 318m 11s
+   Eval latency: 28.31s │ Overall: 8.25
+   Feedback latency: 47.34s │ ROUGE-L: 0.6975
+   Consistency σ: 0.3118 (runs: [8.25, 8.0, 7.5])
+
+   [22/120] Model: gemma  │ ETA 308m 40s
+   Eval latency: 22.16s │ Overall: 8.5
+   Feedback latency: 30.69s │ ROUGE-L: 0.5415
+   Consistency σ: 0.2357 (runs: [8.5, 8.0, 8.5])
+
+   [23/120] Model: phi3   │ ETA 297m 44s
+   Eval latency: 42.82s │ Overall: 5.0
+   Feedback latency: 97.93s │ ROUGE-L: 0.2349
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [24/120] Model: mistral │ ETA 296m 0s
+   Eval latency: 94.84s │ Overall: 9.0
+   Feedback latency: 113.2s │ ROUGE-L: 0.6741
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 7/30 │ Software Engineer │ HR │ easy
+   Q: Can you tell me about a time when you had to explain a complex technical concept...
+
+   [25/120] Model: llama  │ ETA 300m 27s
+   Eval latency: 29.73s │ Overall: 8.25
+   Feedback latency: 49.91s │ ROUGE-L: 0.5821
+   Consistency σ: 0.3536 (runs: [8.25, 7.5, 7.5])
+
+   [26/120] Model: gemma  │ ETA 292m 35s
+   Eval latency: 17.29s │ Overall: 8.75
+   Feedback latency: 35.58s │ ROUGE-L: 0.4601
+   Consistency σ: 0.1179 (runs: [8.75, 8.75, 8.5])
+
+   [27/120] Model: phi3   │ ETA 283m 28s
+   Eval latency: 34.93s │ Overall: 7.75
+   Feedback latency: 107.82s │ ROUGE-L: 0.1932
+   Consistency σ: 1.2416 (runs: [7.75, 7.5, 5.0])
+
+   [28/120] Model: mistral │ ETA 281m 26s
+   Eval latency: 74.79s │ Overall: 9.0
+   Feedback latency: 120.01s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 8/30 │ DevOps Engineer │ Technical │ easy
+   Q: Describe your experience with configuration management tools like Puppet or Ansi...
+
+   [29/120] Model: llama  │ ETA 283m 53s
+   Eval latency: 25.92s │ Overall: 8.0
+   Feedback latency: 41.49s │ ROUGE-L: 0.5566
+   Consistency σ: 0.2357 (runs: [8.0, 8.0, 7.5])
+
+   [30/120] Model: gemma  │ ETA 276m 21s
+   Eval latency: 18.49s │ Overall: 8.25
+   Feedback latency: 40.12s │ ROUGE-L: 0.3736
+   Consistency σ: 0.2041 (runs: [8.25, 8.0, 8.5])
+
+   [31/120] Model: phi3   │ ETA 268m 17s
+   Eval latency: 74.61s │ Overall: 5.0
+   Feedback latency: 97.01s │ ROUGE-L: 0.2319
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [32/120] Model: mistral │ ETA 272m 28s
+   Eval latency: 81.22s │ Overall: 9.25
+   Feedback latency: 120.01s │ ROUGE-L: 0.02
+   Consistency σ: 0.1179 (runs: [9.25, 9.0, 9.0])
+
+── Sample 9/30 │ Backend Developer │ HR │ easy
+   Q: Tell me about a time you worked on a project with a tight deadline. What was you...
+
+   [33/120] Model: llama  │ ETA 275m 11s
+   Eval latency: 28.06s │ Overall: 8.0
+   Feedback latency: 61.45s │ ROUGE-L: 0.5502
+   Consistency σ: 0.2357 (runs: [8.0, 7.5, 7.5])
+
+   [34/120] Model: gemma  │ ETA 269m 9s
+   Eval latency: 20.4s │ Overall: 8.5
+   Feedback latency: 36.87s │ ROUGE-L: 0.7386
+   Consistency σ: 0.1179 (runs: [8.5, 8.5, 8.25])
+
+   [35/120] Model: phi3   │ ETA 261m 36s
+   Eval latency: 64.13s │ Overall: 5.0
+   Feedback latency: 110.15s │ ROUGE-L: 0.1988
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [36/120] Model: mistral │ ETA 265m 34s
+   Eval latency: 72.78s │ Overall: 9.0
+   Feedback latency: 104.87s │ ROUGE-L: 0.5859
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 10/30 │ UX Designer │ HR │ easy
+   Q: Can you tell me about a situation where clear communication led to solving a pro...
+
+   [37/120] Model: llama  │ ETA 266m 9s
+   Eval latency: 36.19s │ Overall: 8.25
+   Feedback latency: 69.73s │ ROUGE-L: 0.4948
+   Consistency σ: 0.3536 (runs: [8.25, 7.5, 7.5])
+
+   [38/120] Model: gemma  │ ETA 261m 10s
+   Eval latency: 24.52s │ Overall: 8.5
+   Feedback latency: 33.58s │ ROUGE-L: 0.3391
+   Consistency σ: 0.0 (runs: [8.5, 8.5, 8.5])
+
+   [39/120] Model: phi3   │ ETA 254m 11s
+   Eval latency: 49.71s │ Overall: 5.0
+   Feedback latency: 106.17s │ ROUGE-L: 0.2326
+   Consistency σ: 1.6499 (runs: [5.0, 8.5, 5.0])
+
+   [40/120] Model: mistral │ ETA 252m 37s
+   Eval latency: 107.81s │ Overall: 9.0
+   Feedback latency: 120.04s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 11/30 │ Product Manager │ HR │ medium
+   Q: Can you describe a time when you had to lead your team through a significant cha...
+
+   [41/120] Model: llama  │ ETA 254m 59s
+   Eval latency: 32.41s │ Overall: 7.5
+   Feedback latency: 70.63s │ ROUGE-L: 0.4413
+   Consistency σ: 0.0 (runs: [7.5, 7.5, 7.5])
+
+   [42/120] Model: gemma  │ ETA 250m 4s
+   Eval latency: 18.87s │ Overall: 8.5
+   Feedback latency: 38.63s │ ROUGE-L: 0.5256
+   Consistency σ: 0.4249 (runs: [8.5, 7.5, 8.25])
+
+   [43/120] Model: phi3   │ ETA 243m 31s
+   Eval latency: 88.77s │ Overall: 5.0
+   Feedback latency: 120.02s │ ROUGE-L: 0.0
+   Consistency σ: 1.6499 (runs: [5.0, 8.5, 5.0])
+
+   [44/120] Model: mistral │ ETA 243m 40s
+   Eval latency: 88.82s │ Overall: 9.75
+   Feedback latency: 120.03s │ ROUGE-L: 0.0
+   Consistency σ: 0.3536 (runs: [9.75, 9.0, 9.0])
+
+── Sample 12/30 │ Frontend Developer │ HR │ medium
+   Q: Tell me about a time when your work on a project faced unexpected challenges fro...
+
+   [45/120] Model: llama  │ ETA 244m 8s
+   Eval latency: 27.98s │ Overall: 7.5
+   Feedback latency: 44.33s │ ROUGE-L: 0.5701
+   Consistency σ: 0.0 (runs: [7.5, 7.5, 7.5])
+
+   [46/120] Model: gemma  │ ETA 238m 24s
+   Eval latency: 19.43s │ Overall: 8.5
+   Feedback latency: 41.46s │ ROUGE-L: 0.6364
+   Consistency σ: 0.0 (runs: [8.5, 8.5, 8.5])
+
+   [47/120] Model: phi3   │ ETA 232m 22s
+   Eval latency: 39.59s │ Overall: 5.0
+   Feedback latency: 92.49s │ ROUGE-L: 0.1993
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [48/120] Model: mistral │ ETA 230m 8s
+   Eval latency: 76.68s │ Overall: 9.0
+   Feedback latency: 101.72s │ ROUGE-L: 0.8052
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 13/30 │ UX Designer │ Technical │ medium
+   Q: Reflecting on your previous UX projects, can you explain how you have incorporat...
+
+   [49/120] Model: llama  │ ETA 229m 13s
+   Eval latency: 36.21s │ Overall: 8.25
+   Feedback latency: 69.7s │ ROUGE-L: 0.7389
+   Consistency σ: 1.3591 (runs: [8.25, 5.0, 7.25])
+
+   [50/120] Model: gemma  │ ETA 226m 58s
+   Eval latency: 26.12s │ Overall: 8.5
+   Feedback latency: 56.81s │ ROUGE-L: 0.7448
+   Consistency σ: 0.1179 (runs: [8.5, 8.25, 8.5])
+
+   [51/120] Model: phi3   │ ETA 221m 51s
+   Eval latency: 115.09s │ Overall: 5.0
+   Feedback latency: 120.03s │ ROUGE-L: 0.0097
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [52/120] Model: mistral │ ETA 224m 15s
+   Eval latency: 92.48s │ Overall: 9.0
+   Feedback latency: 120.02s │ ROUGE-L: 0.0097
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 14/30 │ Software Engineer │ HR │ medium
+   Q: Can you describe a situation where you had to lead a project with limited resour...
+
+   [53/120] Model: llama  │ ETA 223m 55s
+   Eval latency: 71.38s │ Overall: 8.0
+   Feedback latency: 86.83s │ ROUGE-L: 0.6925
+   Consistency σ: 0.2357 (runs: [8.0, 8.0, 7.5])
+
+   [54/120] Model: gemma  │ ETA 220m 59s
+   Eval latency: 24.74s │ Overall: 7.75
+   Feedback latency: 49.59s │ ROUGE-L: 0.4769
+   Consistency σ: 0.3118 (runs: [7.75, 8.25, 8.5])
+
+   [55/120] Model: phi3   │ ETA 215m 44s
+   Eval latency: 64.15s │ Overall: 5.0
+   Feedback latency: 120.04s │ ROUGE-L: 0.0081
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [56/120] Model: mistral │ ETA 216m 26s
+   Eval latency: 114.66s │ Overall: 9.0
+   Feedback latency: 120.03s │ ROUGE-L: 0.0081
+   Consistency σ: 0.1179 (runs: [9.0, 9.0, 8.75])
+
+── Sample 15/30 │ Data Scientist │ HR │ medium
+   Q: Tell me about a time you disagreed with a colleague on a data science project. H...
+
+   [57/120] Model: llama  │ ETA 216m 40s
+   Eval latency: 31.82s │ Overall: 8.0
+   Feedback latency: 48.24s │ ROUGE-L: 0.3478
+   Consistency σ: 0.2357 (runs: [8.0, 7.5, 8.0])
+
+   [58/120] Model: gemma  │ ETA 211m 38s
+   Eval latency: 18.63s │ Overall: 8.5
+   Feedback latency: 37.25s │ ROUGE-L: 0.4885
+   Consistency σ: 0.0 (runs: [8.5, 8.5, 8.5])
+
+   [59/120] Model: phi3   │ ETA 206m 4s
+   Eval latency: 41.79s │ Overall: 5.0
+   Feedback latency: 109.1s │ ROUGE-L: 0.214
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [60/120] Model: mistral │ ETA 203m 2s
+   Eval latency: 92.37s │ Overall: 9.0
+   Feedback latency: 120.05s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 16/30 │ Software Engineer │ Technical │ medium
+   Q: Given a large-scale distributed system with multiple servers, how would you desi...
+
+   [61/120] Model: llama  │ ETA 201m 43s
+   Eval latency: 28.71s │ Overall: 7.5
+   Feedback latency: 42.7s │ ROUGE-L: 0.3696
+   Consistency σ: 1.1785 (runs: [7.5, 7.5, 5.0])
+
+   [62/120] Model: gemma  │ ETA 196m 42s
+   Eval latency: 20.24s │ Overall: 8.5
+   Feedback latency: 48.8s │ ROUGE-L: 0.3518
+   Consistency σ: 0.3536 (runs: [8.5, 7.75, 8.5])
+
+   [63/120] Model: phi3   │ ETA 191m 42s
+   Eval latency: 43.38s │ Overall: 8.5
+   Feedback latency: 100.16s │ ROUGE-L: 0.2319
+   Consistency σ: 1.472 (runs: [8.5, 5.0, 7.5])
+
+   [64/120] Model: mistral │ ETA 188m 51s
+   Eval latency: 90.79s │ Overall: 9.0
+   Feedback latency: 102.3s │ ROUGE-L: 0.6228
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 17/30 │ Cybersecurity Analyst │ Technical │ medium
+   Q: Given that you have experience with intrusion detection systems (IDS), please ex...
+
+   [65/120] Model: llama  │ ETA 186m 53s
+   Eval latency: 34.85s │ Overall: 7.5
+   Feedback latency: 66.86s │ ROUGE-L: 0.3211
+   Consistency σ: 0.0 (runs: [7.5, 7.5, 7.5])
+
+   [66/120] Model: gemma  │ ETA 182m 40s
+   Eval latency: 23.61s │ Overall: 7.5
+   Feedback latency: 36.0s │ ROUGE-L: 0.2657
+   Consistency σ: 0.2041 (runs: [7.5, 7.75, 8.0])
+
+   [67/120] Model: phi3   │ ETA 177m 42s
+   Eval latency: 81.12s │ Overall: 5.0
+   Feedback latency: 120.02s │ ROUGE-L: 0.0
+   Consistency σ: 1.1785 (runs: [5.0, 5.0, 7.5])
+
+   Eval latency: 115.04s │ Overall: 9.05s  not installed. Run: 
+   Feedback latency: 120.01s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 18/30 │ Data Scientist │ HR │ medium
+   Q: Can you describe a situation where you had to communicate complex technical insi...
+
+   [69/120] Model: llama  │ ETA 174m 57s
+   Eval latency: 29.01s │ Overall: 8.25
+   Feedback latency: 67.04s │ ROUGE-L: 0.4597
+   Consistency σ: 0.3536 (runs: [8.25, 7.5, 7.5])
+
+   [70/120] Model: gemma  │ ETA 170m 39s
+   Eval latency: 17.3s │ Overall: 8.75
+   Feedback latency: 34.0s │ ROUGE-L: 0.375
+   Consistency σ: 0.2357 (runs: [8.75, 8.25, 8.25])
+
+   [71/120] Model: phi3   │ ETA 165m 44s
+   Eval latency: 35.25s │ Overall: 8.0
+   Feedback latency: 108.91s │ ROUGE-L: 0.1705
+   Consistency σ: 1.5456 (runs: [8.0, 8.5, 5.0])
+
+   [72/120] Model: mistral │ ETA 162m 21s
+   Eval latency: 84.04s │ Overall: 9.0
+   Feedback latency: 103.96s │ ROUGE-L: 0.4545
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 19/30 │ Data Scientist │ Technical │ medium
+   Q: Can you walk me through the steps to implement a distributed processing approach...
+
+   [73/120] Model: llama  │ ETA 160m 2s
+   Eval latency: 74.69s │ Overall: 7.5
+   Feedback latency: 80.89s │ ROUGE-L: 0.5408
+   Consistency σ: 0.0 (runs: [7.5, 7.5, 7.5])
+
+   [74/120] Model: gemma  │ ETA 156m 35s
+   Eval latency: 23.61s │ Overall: 7.5
+   Feedback latency: 37.41s │ ROUGE-L: 0.5
+   Consistency σ: 0.1179 (runs: [7.5, 7.75, 7.75])
+
+   [75/120] Model: phi3   │ ETA 152m 1s
+   Eval latency: 120.03s │ Overall: 5.0
+   Feedback latency: 120.03s │ ROUGE-L: 0.01
+   Consistency σ: 1.1785 (runs: [5.0, 7.5, 7.5])
+
+   [76/120] Model: mistral │ ETA 150m 39s
+   Eval latency: 120.03s │ Overall: 5.0
+   Feedback latency: 120.05s │ ROUGE-L: 0.01
+   Consistency σ: 1.8856 (runs: [5.0, 5.0, 9.0])
+
+── Sample 20/30 │ Backend Developer │ HR │ medium
+   Q: Can you describe a situation where there was significant conflict within the dev...
+
+   [77/120] Model: llama  │ ETA 149m 22s
+   Eval latency: 58.13s │ Overall: 8.25
+   Feedback latency: 89.04s │ ROUGE-L: 0.5132
+   Consistency σ: 0.3536 (runs: [8.25, 7.5, 7.5])
+
+   [78/120] Model: gemma  │ ETA 145m 54s
+   Eval latency: 39.09s │ Overall: 8.5
+   Feedback latency: 67.23s │ ROUGE-L: 0.2941
+   Consistency σ: 0.3118 (runs: [8.5, 9.0, 8.25])
+
+   [79/120] Model: phi3   │ ETA 141m 59s
+   Eval latency: 95.46s │ Overall: 7.5
+   Feedback latency: 120.05s │ ROUGE-L: 0.0
+   Consistency σ: 1.1785 (runs: [7.5, 5.0, 5.0])
+
+   [80/120] Model: mistral │ ETA 140m 27s
+   Eval latency: 120.03s │ Overall: 5.0
+   Feedback latency: 120.04s │ ROUGE-L: 0.0
+   Consistency σ: 1.8856 (runs: [5.0, 5.0, 9.0])
+
+── Sample 21/30 │ Data Analyst │ Technical │ hard
+   Q: As an experienced data analyst for a retail company looking to expand into inter...
+
+   [81/120] Model: llama  │ ETA 138m 40s
+   Eval latency: 6.03s │ Overall: 5.0
+   Feedback latency: 120.03s │ ROUGE-L: 0.0
+   Consistency σ: 1.1785 (runs: [5.0, 7.5, 7.5])
+
+   [82/120] Model: gemma  │ ETA 135m 1s
+   Eval latency: 36.87s │ Overall: 7.5
+   Feedback latency: 71.41s │ ROUGE-L: 0.2205
+   Consistency σ: 0.0 (runs: [7.5, 7.5, 7.5])
+
+   [83/120] Model: phi3   │ ETA 131m 1s
+   Eval latency: 86.63s │ Overall: 5.0
+   Feedback latency: 120.03s │ ROUGE-L: 0.0
+   Consistency σ: 1.1785 (runs: [5.0, 5.0, 7.5])
+
+   [84/120] Model: mistral │ ETA 128m 55s
+   Eval latency: 120.04s │ Overall: 5.0
+   Feedback latency: 120.04s │ ROUGE-L: 0.0
+   Consistency σ: 1.8856 (runs: [5.0, 5.0, 9.0])
+
+── Sample 22/30 │ Data Scientist │ HR │ hard
+   Q: Tell me about a time you had to make a complex decision about data bias, weighin...
+
+   [85/120] Model: llama  │ ETA 126m 44s
+   Eval latency: 52.04s │ Overall: 7.5
+   Feedback latency: 96.5s │ ROUGE-L: 0.5734
+   Consistency σ: 0.0 (runs: [7.5, 7.5, 7.5])
+
+   [86/120] Model: gemma  │ ETA 123m 4s
+   Eval latency: 35.45s │ Overall: 8.5
+   Feedback latency: 62.59s │ ROUGE-L: 0.657
+   Consistency σ: 0.0 (runs: [8.5, 8.5, 8.5])
+
+   [87/120] Model: phi3   │ ETA 118m 57s
+   Eval latency: 86.29s │ Overall: 5.0
+   Feedback latency: 120.04s │ ROUGE-L: 0.0
+   Consistency σ: 1.6499 (runs: [5.0, 8.5, 8.5])
+
+   [88/120] Model: mistral │ ETA 115m 59s
+   Eval latency: 120.04s │ Overall: 5.0
+   Feedback latency: 120.04s │ ROUGE-L: 0.0
+   Consistency σ: 1.8856 (runs: [5.0, 5.0, 9.0])
+
+── Sample 23/30 │ UX Designer │ HR │ hard
+   Q: Can you describe a situation where you led a UX design project with multiple sta...
+
+   [89/120] Model: llama  │ ETA 113m 35s
+   Eval latency: 56.25s │ Overall: 8.0
+   Feedback latency: 97.04s │ ROUGE-L: 0.5074
+   Consistency σ: 0.2357 (runs: [8.0, 7.5, 8.0])
+
+   [90/120] Model: gemma  │ ETA 109m 54s
+   Eval latency: 37.74s │ Overall: 8.25
+   Feedback latency: 80.76s │ ROUGE-L: 0.2271
+   Consistency σ: 0.3118 (runs: [8.25, 7.75, 8.5])
+
+   [91/120] Model: phi3   │ ETA 105m 55s
+   Eval latency: 119.36s │ Overall: 5.0
+   Feedback latency: 120.02s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [92/120] Model: mistral │ ETA 102m 56s
+   Eval latency: 103.52s │ Overall: 9.0
+   Feedback latency: 120.03s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 24/30 │ Cybersecurity Analyst │ HR │ hard
+   Q: Tell me about a time when you had to manage conflicting priorities within a team...
+
+   [93/120] Model: llama  │ ETA 99m 52s
+   Eval latency: 34.66s │ Overall: 7.5
+   Feedback latency: 47.62s │ ROUGE-L: 0.5772
+   Consistency σ: 0.2357 (runs: [7.5, 8.0, 7.5])
+
+   [94/120] Model: gemma  │ ETA 95m 41s
+   Eval latency: 22.56s │ Overall: 8.25
+   Feedback latency: 33.26s │ ROUGE-L: 0.4248
+   Consistency σ: 0.3536 (runs: [8.25, 7.5, 8.25])
+
+   [95/120] Model: phi3   │ ETA 91m 23s
+   Eval latency: 84.32s │ Overall: 5.0
+   Feedback latency: 120.02s │ ROUGE-L: 0.0
+   Consistency σ: 1.1785 (runs: [5.0, 5.0, 7.5])
+
+   [96/120] Model: mistral │ ETA 87m 57s
+   Eval latency: 92.43s │ Overall: 9.0
+   Feedback latency: 112.81s │ ROUGE-L: 0.8321
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 25/30 │ Product Manager │ HR │ hard
+   Q: Can you describe a situation where your actions directly influenced both custome...
+
+   [97/120] Model: llama  │ ETA 84m 47s
+   Eval latency: 39.73s │ Overall: 7.5
+   Feedback latency: 71.11s │ ROUGE-L: 0.8202
+   Consistency σ: 0.3536 (runs: [7.5, 8.25, 7.5])
+
+   [98/120] Model: gemma  │ ETA 80m 52s
+   Eval latency: 22.33s │ Overall: 8.0
+   Feedback latency: 32.35s │ ROUGE-L: 0.417
+   Consistency σ: 0.2041 (runs: [8.0, 8.5, 8.25])
+
+   [99/120] Model: phi3   │ ETA 76m 41s
+   Eval latency: 52.98s │ Overall: 5.0
+   Feedback latency: 120.04s │ ROUGE-L: 0.0
+   Consistency σ: 1.472 (runs: [5.0, 8.5, 7.5])
+
+   [100/120] Model: mistral │ ETA 73m 14s
+   Eval latency: 111.76s │ Overall: 9.0
+   Feedback latency: 120.04s │ ROUGE-L: 0.0
+   Consistency σ: 0.1179 (runs: [9.0, 9.25, 9.0])
+
+── Sample 26/30 │ Data Scientist │ HR │ hard
+   Q: Can you describe a situation where your analysis significantly impacted company ...
+
+   [101/120] Model: llama  │ ETA 70m 3s
+   Eval latency: 54.89s │ Overall: 8.0
+   Feedback latency: 82.15s │ ROUGE-L: 0.4916
+   Consistency σ: 0.2357 (runs: [8.0, 8.0, 7.5])
+
+   [102/120] Model: gemma  │ ETA 66m 16s
+   Eval latency: 25.89s │ Overall: 8.0
+   Feedback latency: 69.27s │ ROUGE-L: 0.3939
+   Consistency σ: 0.1179 (runs: [8.0, 8.25, 8.25])
+
+   [103/120] Model: phi3   │ ETA 62m 19s
+   Eval latency: 62.2s │ Overall: 7.5
+   Feedback latency: 120.03s │ ROUGE-L: 0.0
+   Consistency σ: 1.1785 (runs: [7.5, 7.5, 5.0])
+
+   [104/120] Model: mistral │ ETA 58m 47s
+   Eval latency: 80.55s │ Overall: 9.0
+   Feedback latency: 120.03s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 27/30 │ Software Engineer │ HR │ hard
+   Q: Can you walk me through how you would facilitate a technical discussion with a t...
+
+   [105/120] Model: llama  │ ETA 55m 23s
+   Eval latency: 26.35s │ Overall: 8.0
+   Feedback latency: 47.59s │ ROUGE-L: 0.6377
+   Consistency σ: 0.2357 (runs: [8.0, 7.5, 7.5])
+
+   [106/120] Model: gemma  │ ETA 51m 27s
+   Eval latency: 20.28s │ Overall: 8.5
+   Feedback latency: 38.53s │ ROUGE-L: 0.4912
+   Consistency σ: 0.0 (runs: [8.5, 8.5, 8.5])
+
+   [107/120] Model: phi3   │ ETA 47m 29s
+   Eval latency: 40.27s │ Overall: 5.0
+   Feedback latency: 106.53s │ ROUGE-L: 0.1333
+   Consistency σ: 1.6499 (runs: [5.0, 5.0, 8.5])
+
+   [108/120] Model: mistral │ ETA 43m 49s
+   Eval latency: 77.36s │ Overall: 9.0
+   Feedback latency: 110.27s │ ROUGE-L: 0.7451
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 28/30 │ Machine Learning Engineer │ HR │ hard
+   Q: Can you describe a time when you had to integrate machine learning techniques in...
+
+   [109/120] Model: llama  │ ETA 40m 18s
+   Eval latency: 31.84s │ Overall: 7.5
+   Feedback latency: 79.43s │ ROUGE-L: 0.489
+   Consistency σ: 0.0 (runs: [7.5, 7.5, 7.5])
+
+   [110/120] Model: gemma  │ ETA 36m 32s
+   Eval latency: 20.45s │ Overall: 8.5
+   Feedback latency: 41.7s │ ROUGE-L: 0.4
+   Consistency σ: 0.1179 (runs: [8.5, 8.75, 8.5])
+
+   [111/120] Model: phi3   │ ETA 32m 42s
+   Eval latency: 81.52s │ Overall: 5.0
+   Feedback latency: 108.12s │ ROUGE-L: 0.2
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [112/120] Model: mistral │ ETA 29m 12s
+   Eval latency: 103.95s │ Overall: 9.0
+   Feedback latency: 114.46s │ ROUGE-L: 0.505
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+── Sample 29/30 │ Frontend Developer │ HR │ hard
+   Q: Can you walk me through the thought process behind your decision when one of you...
+
+   [113/120] Model: llama  │ ETA 25m 41s
+   Eval latency: 27.43s │ Overall: 8.0
+   Feedback latency: 52.99s │ ROUGE-L: 0.4354
+   Consistency σ: 0.3118 (runs: [8.0, 7.5, 8.25])
+
+   [114/120] Model: gemma  │ ETA 21m 55s
+   Eval latency: 22.11s │ Overall: 7.5
+   Feedback latency: 30.52s │ ROUGE-L: 0.4151
+   Consistency σ: 0.0 (runs: [7.5, 7.5, 7.5])
+
+   [115/120] Model: phi3   │ ETA 18m 10s
+   Eval latency: 36.64s │ Overall: 5.0
+   Feedback latency: 120.04s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [116/120] Model: mistral │ ETA 14m 32s
+   Eval latency: 73.85s │ Overall: 8.75
+   Feedback latency: 103.54s │ ROUGE-L: 0.7644
+   Consistency σ: 0.2041 (runs: [8.75, 9.25, 9.0])
+
+── Sample 30/30 │ Software Engineer │ HR │ hard
+   Q: You've been working on a challenging project with tight deadlines.  A teammate h...
+
+   [117/120] Model: llama  │ ETA 10m 55s
+   Eval latency: 28.05s │ Overall: 7.5
+   Feedback latency: 45.98s │ ROUGE-L: 0.2752
+   Consistency σ: 0.0 (runs: [7.5, 7.5, 7.5])
+
+   [118/120] Model: gemma  │ ETA 7m 15s
+   Eval latency: 17.45s │ Overall: 8.5
+   Feedback latency: 38.08s │ ROUGE-L: 0.3646
+   Consistency σ: 0.3536 (runs: [8.5, 7.75, 7.75])
+
+   [119/120] Model: phi3   │ ETA 3m 36s
+   Eval latency: 120.03s │ Overall: 5.0
+   Feedback latency: 120.03s │ ROUGE-L: 0.0
+   Consistency σ: 0.0 (runs: [5.0, 5.0, 5.0])
+
+   [120/120] Model: mistral │ ETA 0m 0s
+   Eval latency: 75.52s │ Overall: 9.0
+   Feedback latency: 80.81s │ ROUGE-L: 0.4762
+   Consistency σ: 0.0 (runs: [9.0, 9.0, 9.0])
+
+
+── Computing BERTScore (batched)...
+[metrics] bert-score not installed. Run: pip install bert-score
+   llama: mean BERTScore = 0.5011
+[metrics] bert-score not installed. Run: pip install bert-score
+   gemma: mean BERTScore = 0.4505
+[metrics] bert-score not installed. Run: pip install bert-score
+   phi3: mean BERTScore = 0.107
+[metrics] bert-score not installed. Run: pip install bert-score
+   mistral: mean BERTScore = 0.2756
+
+✓ Raw results saved → D:\Semester 8\GenAI\AI-Interview-Simulator\benchmark\results\raw_results.json
+✓ Summary saved → D:\Semester 8\GenAI\AI-Interview-Simulator\benchmark\results\summary.json
+[metrics] scikit-learn not installed. Run: pip install scikit-learn
+   κ (llama vs gemma) = 0.9667
+[metrics] scikit-learn not installed. Run: pip install scikit-learn
+   κ (llama vs phi3) = 0.3
+[metrics] scikit-learn not installed. Run: pip install scikit-learn
+   κ (gemma vs phi3) = 0.2667
+✓ Kappa saved → D:\Semester 8\GenAI\AI-Interview-Simulator\benchmark\results\kappa.json
+
+=================================================================
+  RESULTS SUMMARY
+=================================================================
+Model       ROUGE-L  BERTScore  Latency(s)  Consist.σ  κ(vs llama)
+-----------------------------------------------------------------
+llama       0.5011    0.5011     100.46    0.3240           —
+gemma       0.4505    0.4505      66.94    0.1551      0.9667
+phi3        0.1070    0.1070     179.13    0.7627      0.3000
+mistral     0.2756    0.2756     206.93    0.2965           —
+=================================================================
+
+  BERTScore by Difficulty:
+  Model          Easy   Medium     Hard
+  --------------------------------------
+  llama        0.5232   0.4995   0.4807
+  gemma        0.4844   0.4659   0.4011
+  phi3         0.2032   0.0844   0.0333
+  mistral      0.3035   0.1910   0.3323
+
+  Total runtime: 439m 27s
+=================================================================
+
+(venv) PS D:\Semester 8\GenAI\AI-Interview-Simulator\benchmark> 

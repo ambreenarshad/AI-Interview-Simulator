@@ -1,0 +1,154 @@
+{
+  "llama": {
+    "rouge_l": {
+      "mean": 0.5011,
+      "min": 0.0,
+      "max": 0.8202,
+      "std": 0.1531
+    },
+    "bertscore": {
+      "mean": 0.5011,
+      "min": 0.0,
+      "max": 0.8202,
+      "std": 0.1531
+    },
+    "latency_s": {
+      "mean": 100.458,
+      "min": 67.41,
+      "max": 158.21,
+      "std": 28.5539
+    },
+    "consistency_std": {
+      "mean": 0.324,
+      "min": 0.0,
+      "max": 1.3591,
+      "std": 0.3335
+    },
+    "overall_score": {
+      "mean": 7.75,
+      "min": 5.0,
+      "max": 8.25,
+      "std": 0.6021
+    },
+    "bertscore_by_difficulty": {
+      "easy": 0.5232,
+      "medium": 0.4995,
+      "hard": 0.4807
+    },
+    "n_samples": 30
+  },
+  "gemma": {
+    "rouge_l": {
+      "mean": 0.4505,
+      "min": 0.2205,
+      "max": 0.7448,
+      "std": 0.1367
+    },
+    "bertscore": {
+      "mean": 0.4505,
+      "min": 0.2205,
+      "max": 0.7448,
+      "std": 0.1367
+    },
+    "latency_s": {
+      "mean": 66.9383,
+      "min": 50.7,
+      "max": 118.5,
+      "std": 18.8507
+    },
+    "consistency_std": {
+      "mean": 0.1551,
+      "min": 0.0,
+      "max": 0.4249,
+      "std": 0.131
+    },
+    "overall_score": {
+      "mean": 8.2417,
+      "min": 7.5,
+      "max": 8.75,
+      "std": 0.4056
+    },
+    "bertscore_by_difficulty": {
+      "easy": 0.4844,
+      "medium": 0.4659,
+      "hard": 0.4011
+    },
+    "n_samples": 30
+  },
+  "phi3": {
+    "rouge_l": {
+      "mean": 0.107,
+      "min": 0.0,
+      "max": 0.2987,
+      "std": 0.108
+    },
+    "bertscore": {
+      "mean": 0.107,
+      "min": 0.0,
+      "max": 0.2987,
+      "std": 0.108
+    },
+    "latency_s": {
+      "mean": 179.1317,
+      "min": 113.47,
+      "max": 240.06,
+      "std": 37.2031
+    },
+    "consistency_std": {
+      "mean": 0.7627,
+      "min": 0.0,
+      "max": 1.6499,
+      "std": 0.7154
+    },
+    "overall_score": {
+      "mean": 5.8083,
+      "min": 5.0,
+      "max": 8.5,
+      "std": 1.3566
+    },
+    "bertscore_by_difficulty": {
+      "easy": 0.2032,
+      "medium": 0.0844,
+      "hard": 0.0333
+    },
+    "n_samples": 30
+  },
+  "mistral": {
+    "rouge_l": {
+      "mean": 0.2756,
+      "min": 0.0,
+      "max": 0.8321,
+      "std": 0.3083
+    },
+    "bertscore": {
+      "mean": 0.2756,
+      "min": 0.0,
+      "max": 0.8321,
+      "std": 0.3083
+    },
+    "latency_s": {
+      "mean": 206.9257,
+      "min": 156.33,
+      "max": 240.08,
+      "std": 23.1996
+    },
+    "consistency_std": {
+      "mean": 0.2965,
+      "min": 0.0,
+      "max": 1.8856,
+      "std": 0.6296
+    },
+    "overall_score": {
+      "mean": 8.5167,
+      "min": 5.0,
+      "max": 9.75,
+      "std": 1.3903
+    },
+    "bertscore_by_difficulty": {
+      "easy": 0.3035,
+      "medium": 0.191,
+      "hard": 0.3323
+    },
+    "n_samples": 30
+  }
+}

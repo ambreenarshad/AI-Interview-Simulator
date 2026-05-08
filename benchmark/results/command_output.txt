@@ -741,3 +741,37 @@ mistral     0.2756    0.2756     206.93    0.2965           —
 =================================================================
 
 (venv) PS D:\Semester 8\GenAI\AI-Interview-Simulator\benchmark> 
+
+(venv) PS D:\Semester 8\GenAI\AI-Interview-Simulator\benchmark> python generate_plots.py
+
+── Generating plots...
+  ✓ bar_comparison.png
+  ✓ rouge_by_difficulty.png
+  ✓ latency_vs_quality.png
+  ✓ score_distribution.png
+  ✓ consistency.png
+  ✓ kappa_heatmap.png
+  ✓ score_trend.png
+
+── Generating LaTeX tables...
+  ✓ latex_tables.txt
+
+── CORRECTED NUMBERS FOR YOUR PAPER ──────────────────────────
+  Model         ROUGE-L    Latency        σ   κ vs llama
+  ----------------------------------------------------
+  LLaMA 3.2      0.5011      35.26   0.3240            —
+  Gemma 7B       0.4505      23.38   0.1551       0.9667
+  Phi-3          0.1070      69.02   0.7627       0.3000
+  Mistral 7B     0.2756      93.83   0.2965            —
+
+  ROUGE-L by Difficulty:
+  Model            Easy   Medium     Hard
+  LLaMA 3.2      0.5232   0.4995   0.4807
+  Gemma 7B       0.4844   0.4659   0.4011
+  Phi-3          0.2032   0.0844   0.0333
+  Mistral 7B     0.3035   0.1910   0.3323
+
+  All plots → D:\Semester 8\GenAI\AI-Interview-Simulator\benchmark\results\plots
+  LaTeX    → D:\Semester 8\GenAI\AI-Interview-Simulator\benchmark\results\latex_tables.txt
+
+(venv) PS D:\Semester 8\GenAI\AI-Interview-Simulator\benchmark> 

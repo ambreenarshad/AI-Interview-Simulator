@@ -1,0 +1,27 @@
+\begin{table}[h]
+\caption{Comparative evaluation of LLaMA~3.2, Gemma~7B, Phi-3, and Mistral~7B. $\uparrow$ higher is better; $\downarrow$ lower is better.}\label{tab:results}
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Model} & \textbf{ROUGE-L $\uparrow$} & \textbf{Latency~(s) $\downarrow$} & \textbf{Consist.~$\sigma$ $\downarrow$} & \textbf{$\kappa$ $\uparrow$} \\
+\midrule
+LLaMA 3.2 & 0.5011 & 35.3 & 0.3240 & 1.00 \\
+Gemma 7B & 0.4505 & 23.4 & 0.1551 & 0.97 \\
+Phi-3 & 0.1070 & 69.0 & 0.7627 & 0.30 \\
+Mistral 7B & 0.2756 & 93.8 & 0.2965 & 0.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\caption{ROUGE-L F1 per question difficulty level.}\label{tab:difficulty}
+\begin{tabular}{lrrr}
+\toprule
+\textbf{Model} & \textbf{Easy} & \textbf{Medium} & \textbf{Hard} \\
+\midrule
+LLaMA 3.2 & 0.5232 & 0.4995 & 0.4807 \\
+Gemma 7B & 0.4844 & 0.4659 & 0.4011 \\
+Phi-3 & 0.2032 & 0.0844 & 0.0333 \\
+Mistral 7B & 0.3035 & 0.1910 & 0.3323 \\
+\bottomrule
+\end{tabular}
+\end{table}

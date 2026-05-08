@@ -1,0 +1,93 @@
+[
+    {
+        "total_samples": 78,
+        "by_role": {
+            "Software Engineer": 8,
+            "Data Scientist": 10,
+            "Machine Learning Engineer": 9,
+            "Frontend Developer": 9,
+            "Backend Developer": 5,
+            "DevOps Engineer": 8,
+            "Product Manager": 7,
+            "UX Designer": 9,
+            "Data Analyst": 9,
+            "Cybersecurity Analyst": 4
+        },
+        "by_type": {
+            "HR": 55,
+            "Technical": 23
+        },
+        "by_difficulty": {
+            "easy": 28,
+            "medium": 23,
+            "hard": 27
+        },
+        "avg_question_words": 31.1,
+        "avg_answer_words": 103.4,
+        "min_answer_words": 79,
+        "max_answer_words": 138,
+        "generated_at": "2026-05-08T13:25:08.916646",
+        "model_used": "gemma2:2b"
+    },
+
+    {
+        "total_samples": 89,
+        "by_role": {
+            "Software Engineer": 8,
+            "Data Scientist": 11,
+            "Machine Learning Engineer": 6,
+            "Frontend Developer": 9,
+            "Backend Developer": 8,
+            "DevOps Engineer": 10,
+            "Product Manager": 10,
+            "UX Designer": 10,
+            "Data Analyst": 9,
+            "Cybersecurity Analyst": 8
+        },
+        "by_type": {
+            "HR": 59,
+            "Technical": 30
+        },
+        "by_difficulty": {
+            "easy": 35,
+            "medium": 30,
+            "hard": 24
+        },
+        "avg_question_words": 40.0,
+        "avg_answer_words": 136.1,
+        "min_answer_words": 82,
+        "max_answer_words": 291,
+        "generated_at": "2026-05-08T17:33:51.490486",
+        "model_used": "llama3.2:latest"
+    },
+    {
+        "total_samples": 93,
+        "by_role": {
+            "Software Engineer": 7,
+            "Data Scientist": 9,
+            "Machine Learning Engineer": 9,
+            "Frontend Developer": 9,
+            "Backend Developer": 8,
+            "DevOps Engineer": 9,
+            "Product Manager": 10,
+            "UX Designer": 11,
+            "Data Analyst": 10,
+            "Cybersecurity Analyst": 11
+        },
+        "by_type": {
+            "HR": 58,
+            "Technical": 35
+        },
+        "by_difficulty": {
+            "easy": 33,
+            "medium": 30,
+            "hard": 30
+        },
+        "avg_question_words": 39.7,
+        "avg_answer_words": 178.4,
+        "min_answer_words": 97,
+        "max_answer_words": 326,
+        "generated_at": "2026-05-08T18:45:10.051640",
+        "model_used": "phi3:latest"
+    }
+]

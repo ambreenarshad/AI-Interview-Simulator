@@ -1,0 +1,30 @@
+{
+  "total_samples": 78,
+  "by_role": {
+    "Software Engineer": 8,
+    "Data Scientist": 10,
+    "Machine Learning Engineer": 9,
+    "Frontend Developer": 9,
+    "Backend Developer": 5,
+    "DevOps Engineer": 8,
+    "Product Manager": 7,
+    "UX Designer": 9,
+    "Data Analyst": 9,
+    "Cybersecurity Analyst": 4
+  },
+  "by_type": {
+    "HR": 55,
+    "Technical": 23
+  },
+  "by_difficulty": {
+    "easy": 28,
+    "medium": 23,
+    "hard": 27
+  },
+  "avg_question_words": 31.1,
+  "avg_answer_words": 103.4,
+  "min_answer_words": 79,
+  "max_answer_words": 138,
+  "generated_at": "2026-05-08T13:25:08.916646",
+  "model_used": "gemma2:2b"
+}

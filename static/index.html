@@ -1794,11 +1794,13 @@ function displayQuestion(question, qNum, difficulty, timeLimit) {
 
 // ── helper to reset record button ─────────────────────────────────────────────
 function resetRecordButton() {
-  if (state.isRecording) {
-    state.isRecording = false;
-    if (speechRecognition) {
-      try { speechRecognition.stop(); } catch(e) {}
-    }
+  state.isRecording = false;
+  _srRestarting     = false;
+  if (speechRecognition) {
+    speechRecognition.onend   = null;
+    speechRecognition.onerror = null;
+    try { speechRecognition.stop(); } catch(e) {}
+    speechRecognition = null;
   }
   const btn = document.getElementById('record-btn');
   if (btn) btn.classList.remove('recording');
@@ -2119,58 +2121,118 @@ function addHistoryBar(score) {
 
 // ── Voice Recording ────────────────────────────────────────────────────────────
 let speechRecognition = null;
+let finalTranscript   = '';
+let _srRestarting     = false; // true during auto-restart so onstart doesn't wipe transcript
 
-function initSpeechRecognition() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return false;
+function _makeSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
 
-  speechRecognition = new SpeechRecognition();
-  speechRecognition.continuous = true;
-  speechRecognition.interimResults = true;
-  speechRecognition.lang = 'en-US';
+  const sr = new SR();
+  sr.continuous      = true;
+  sr.interimResults  = true;
+  sr.lang            = 'en-US';
+  sr.maxAlternatives = 1;
 
-  let finalTranscript = '';
+  // Track the last interim text so we can save it if the session ends mid-phrase
+  let lastInterim = '';
 
-  speechRecognition.onstart = () => {
-    finalTranscript = document.getElementById('answer-input').value || '';
-    setStatus('🎤 Listening... speak your answer.');
+  sr.onstart = () => {
+    if (!_srRestarting) {
+      // Fresh start: sync finalTranscript with whatever is already in the box
+      finalTranscript = document.getElementById('answer-input').value || '';
+    }
+    _srRestarting = false;
+    lastInterim   = '';
+    setStatus('🎤 Listening... speak now.');
   };
 
-  speechRecognition.onresult = (event) => {
+  sr.onresult = (event) => {
     let interim = '';
     for (let i = event.resultIndex; i < event.results.length; i++) {
       if (event.results[i].isFinal) {
         finalTranscript += event.results[i][0].transcript + ' ';
+        lastInterim = '';          // phrase is committed — no longer unfinished
       } else {
         interim = event.results[i][0].transcript;
+        lastInterim = interim;    // keep latest unfinished phrase in case session ends
       }
     }
+    // Update textarea immediately so the user sees text appearing in real time
     document.getElementById('answer-input').value = finalTranscript + interim;
+    // Let the user know audio is reaching the recogniser
+    if (interim) setStatus('🎤 Hearing you...');
   };
 
-  speechRecognition.onerror = (e) => {
-    setStatus('Speech error: ' + e.error + '. Use text mode.');
+  sr.onerror = (e) => {
+    // All of these are non-fatal — onend fires next and we restart
+    if (e.error === 'no-speech' ||
+        e.error === 'aborted'   ||
+        e.error === 'network'   ||
+        e.error === 'service-not-available') return;
+    setStatus('Mic error (' + e.error + '). Allow microphone access and retry.');
     stopSpeechRecognition();
   };
 
-  speechRecognition.onend = () => {
-    if (state.isRecording) {
-      speechRecognition.start(); // auto-restart
-    } else {
-      setStatus('Recording stopped. Review your answer and submit.');
+  sr.onend = () => {
+    // Chrome ends the session after silence even with continuous=true.
+    // Any word the user was mid-saying is still in lastInterim — save it now
+    // so it isn't lost during the restart gap.
+    if (lastInterim) {
+      finalTranscript += lastInterim + ' ';
+      lastInterim = '';
+      document.getElementById('answer-input').value = finalTranscript;
     }
+
+    if (!state.isRecording) {
+      setStatus('Recording stopped. Review your answer and submit.');
+      return;
+    }
+
+    // Restart the SAME sr instance (no new object = no reference confusion)
+    _srRestarting = true;
+    setStatus('🎤 Listening... speak now.');
+    setTimeout(() => {
+      if (!state.isRecording) { _srRestarting = false; return; }
+      try {
+        sr.start();
+      } catch(e) {
+        _srRestarting = false;
+        setStatus('Mic lost. Tap Record to retry.');
+        stopSpeechRecognition();
+      }
+    }, 100);  // 100 ms is enough for Chrome to release the mic; shorter = less dead time
   };
 
-  return true;
+  return sr;
 }
 
 function startSpeechRecognition() {
-  if (!speechRecognition && !initSpeechRecognition()) {
-    setStatus('Speech recognition not supported in this browser. Use Chrome.');
+  if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+    setStatus('Speech recognition not supported. Use Chrome or Edge.');
     return;
   }
+  // Kill any previous instance cleanly before starting fresh
+  if (speechRecognition) {
+    speechRecognition.onend   = null;
+    speechRecognition.onerror = null;
+    try { speechRecognition.stop(); } catch(e) {}
+    speechRecognition = null;
+  }
+  _srRestarting   = false;
+  finalTranscript = '';
+  speechRecognition = _makeSpeechRecognition();
   state.isRecording = true;
-  speechRecognition.start();
+  try {
+    speechRecognition.start();
+  } catch(e) {
+    state.isRecording = false;
+    speechRecognition = null;
+    setStatus('Could not start recording. Check microphone permissions.');
+    return;
+  }
+  // Make sure the textarea is visible and writable so live transcript shows up
+  document.getElementById('answer-input').disabled = false;
   document.getElementById('record-btn').classList.add('recording');
   document.getElementById('record-icon').textContent = '⏹';
   document.getElementById('record-label').textContent = 'Stop';
@@ -2178,7 +2240,13 @@ function startSpeechRecognition() {
 
 function stopSpeechRecognition() {
   state.isRecording = false;
-  if (speechRecognition) speechRecognition.stop();
+  _srRestarting     = false;
+  if (speechRecognition) {
+    speechRecognition.onend   = null;
+    speechRecognition.onerror = null;
+    try { speechRecognition.stop(); } catch(e) {}
+    speechRecognition = null;
+  }
   document.getElementById('record-btn').classList.remove('recording');
   document.getElementById('record-icon').textContent = '🎤';
   document.getElementById('record-label').textContent = 'Record';

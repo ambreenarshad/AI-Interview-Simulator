@@ -26,6 +26,7 @@ answer is open-ended. LLM scoring assesses meaning, not surface text overlap.
 """
 
 import re
+import difflib
 from utils.llm import query_evaluator   # gemma2:2b
 
 SYSTEM_PROMPT = """You are a strict interview evaluator. You always respond in the EXACT format requested.
@@ -56,6 +57,17 @@ def evaluate_answer(question: str, answer: str) -> dict:
     """
     if not answer or answer.strip() == "":
         return _empty_answer_result()
+
+    q_norm = question.lower().strip()
+    a_norm = answer.lower().strip()
+    similarity = difflib.SequenceMatcher(None, q_norm, a_norm).ratio()
+    if similarity > 0.75 or a_norm in q_norm or q_norm in a_norm:
+        return {
+            "clarity": 1, "relevance": 1, "depth": 1, "structure": 1,
+            "overall": 1.0,
+            "explanation": "The answer is identical or nearly identical to the question itself. Please provide a genuine response.",
+            "raw_response": "",
+        }
 
     prompt = f"""Evaluate this interview answer strictly.
 

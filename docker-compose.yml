@@ -1,0 +1,64 @@
+version: "3.9"
+
+# ── AI Interview Simulator — Docker Compose ────────────────────────────────────
+# Starts two services:
+#   1. ollama  — local LLM server (llama3.2 + gemma:7b)
+#   2. app     — FastAPI web server
+#
+# Usage:
+#   docker compose up --build          # first run (pulls images, builds app)
+#   docker compose up                  # subsequent runs
+#   docker compose down                # stop everything
+#
+# After first startup, pull the required models inside the ollama container:
+#   docker compose exec ollama ollama pull llama3.2:latest
+#   docker compose exec ollama ollama pull gemma:7b
+
+services:
+
+  # ── Ollama LLM server ────────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: interview_ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"          # expose so you can also run: ollama pull ... locally
+    volumes:
+      - ollama_models:/root/.ollama   # persist downloaded model weights
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h         # keep models loaded in memory
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ── FastAPI application ──────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: interview_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434   # app talks to the ollama service
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data                       # persist generated dataset
+      - ./benchmark/results:/app/benchmark/results  # persist benchmark results
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# ── Named volumes ────────────────────────────────────────────────────────────
+volumes:
+  ollama_models:
+    driver: local

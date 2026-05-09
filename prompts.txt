@@ -1,0 +1,299 @@
+================================================================================
+AI INTERVIEW SIMULATOR — PROMPT ENGINEERING DOCUMENTATION
+Course: Generative AI, SPRING 2026 | Instructor: Dr. Akhtar Jamil
+FAST National University of Computer and Emerging Sciences
+================================================================================
+
+This file documents every prompt used in the AI Interview Simulator system,
+organised by agent. Each entry includes: the agent, the assigned model, the
+prompt engineering technique applied, and the full prompt text.
+
+Model assignments are justified by benchmark results (benchmark/results/summary.json):
+  - LLaMA 3.2  (llama3.2:latest) → Interviewer Agent, Report Agent
+  - Gemma 7B   (gemma:7b)        → Evaluator Agent, Feedback Agent
+
+================================================================================
+PROMPT ENGINEERING TECHNIQUES USED
+================================================================================
+
+1. STRUCTURED OUTPUT PROMPTING
+   Enforcing rigid labeled sections (CLARITY: [n], RELEVANCE: [n] ...) so that
+   regex parsers can reliably extract values without ambiguity.
+
+2. ROLE PROMPTING
+   Assigning a persona via the system prompt ("You are a strict interview
+   evaluator...") to condition the model's tone, authority, and domain focus.
+
+3. NEGATIVE CONSTRAINTS
+   Explicitly stating what NOT to do ("Only output those 5 lines. Nothing else.")
+   reduces model verbosity and format deviation — critical for parser reliability.
+
+4. FEW-SHOT FORMAT DEMONSTRATION
+   The output format itself (CLARITY: [number]\nRELEVANCE: [number]...) acts as
+   an implicit few-shot template, guiding the model without requiring examples.
+
+5. CONTEXT INJECTION
+   Passing role, difficulty, interview_type, and previous_topics dynamically
+   into prompts ensures questions remain non-repetitive and domain-relevant.
+
+6. CHAIN-OF-THOUGHT SUPPRESSION
+   For the evaluator, we suppress reasoning steps ("Nothing else.") to prevent
+   the model from adding explanatory text that breaks structured parsing.
+
+7. STAR METHOD ENFORCEMENT
+   The feedback and improved-answer prompts explicitly reference the STAR
+   (Situation, Task, Action, Result) framework, grounding behavioral feedback
+   in an industry-standard structure.
+
+8. ADAPTIVE DIFFICULTY SIGNALING
+   The difficulty parameter (easy / medium / hard) is mapped to natural-language
+   guidance strings injected into the prompt, nudging question complexity without
+   requiring fine-tuning.
+
+================================================================================
+AGENT 1 — INTERVIEWER AGENT
+Model: llama3.2:latest (ROUGE-L 0.50, latency 35s — best generative quality)
+File:  agents/interviewer_agent.py
+================================================================================
+
+--- SYSTEM PROMPT ---
+
+You are an expert interviewer with 15+ years of experience.
+You ask clear, targeted, and professionally relevant questions.
+
+--- USER PROMPT TEMPLATE ---
+
+Generate ONE interview question for this context:
+
+Role: {role}
+Type: {interview_type} | Difficulty: {difficulty} | Question #{question_number}
+
+Rules:
+- {type_instruction}
+- {difficulty_guide}
+- Output ONLY the question — no numbering, no preamble, no explanation.
+- Be concise and conversational.
+[DO NOT repeat these already-covered topics: {previous_topics}]  ← injected when applicable
+
+--- TYPE INSTRUCTION VALUES ---
+
+HR:        "Ask a behavioral, situational, or cultural fit question."
+Technical: "Ask a technical, problem-solving question for a {role}."
+Mixed:     "Alternate between behavioral and technical questions."
+
+--- DIFFICULTY GUIDE VALUES ---
+
+easy:   "Make it entry-level and straightforward."
+medium: "Make it moderately challenging, requiring real experience."
+hard:   "Make it senior-level, requiring deep expertise."
+
+--- PROMPT ENGINEERING NOTES ---
+
+Technique: Role prompting + context injection + negative constraints + adaptive difficulty
+The previous_topics list (last 5 questions) is injected to enforce diversity.
+Output stripping removes common LLM prefixes ("Q:", "1.", "-") post-hoc.
+
+================================================================================
+AGENT 2 — EVALUATOR AGENT
+Model: gemma:7b (consistency σ=0.155 — most stable scorer in benchmark)
+File:  agents/evaluator_agent.py
+================================================================================
+
+--- SYSTEM PROMPT ---
+
+You are a strict interview evaluator. You always respond in the EXACT format requested.
+Never add extra text, explanations outside the format, or commentary.
+
+--- USER PROMPT TEMPLATE ---
+
+Evaluate this interview answer strictly.
+
+QUESTION: {question}
+
+ANSWER: {answer}
+
+Score each dimension 1-10. Respond in EXACTLY this format with no deviations:
+
+CLARITY: [number]
+RELEVANCE: [number]
+DEPTH: [number]
+STRUCTURE: [number]
+EXPLANATION: [2-3 sentences about what was done well and what was lacking]
+
+Only output those 5 lines. Nothing else.
+
+--- SCORING DIMENSIONS ---
+
+CLARITY:   How clearly the candidate communicated their answer (1-10)
+RELEVANCE: How directly the answer addressed the question asked (1-10)
+DEPTH:     Depth of knowledge, specificity of examples, technical detail (1-10)
+STRUCTURE: Logical flow, organisation, use of frameworks like STAR (1-10)
+OVERALL:   Computed as arithmetic mean of the four dimensions (not LLM-generated)
+
+--- PROMPT ENGINEERING NOTES ---
+
+Technique: Structured output prompting + role prompting + chain-of-thought suppression
+Gemma selected because benchmark showed σ=0.155 (lowest variance across 3 repeated
+runs per sample), meaning it assigns the most consistent scores across identical inputs.
+The format is enforced twice ("EXACTLY this format" + "Only output those 5 lines")
+because Gemma occasionally adds preamble without the double constraint.
+
+--- EMPTY ANSWER HANDLING ---
+
+If answer is empty or whitespace, a hardcoded result is returned immediately
+without calling the LLM: clarity=1, relevance=1, depth=1, structure=1, overall=1.0.
+
+================================================================================
+AGENT 3 — FEEDBACK AGENT
+Model: gemma:7b (same justification as evaluator — stable structured output)
+File:  agents/feedback_agent.py
+================================================================================
+
+--- SYSTEM PROMPT ---
+
+You are a professional interview coach. You give specific, actionable feedback.
+Always respond in the EXACT format requested — no extra text.
+
+--- USER PROMPT TEMPLATE ---
+
+Review this interview answer and give feedback.
+
+QUESTION: {question}
+ANSWER: {answer}
+SCORES: Clarity {clarity}/10, Relevance {relevance}/10, Depth {depth}/10, Structure {structure}/10
+
+Respond in EXACTLY this format:
+
+STRENGTHS: [2-3 specific things done well]
+WEAKNESSES: [2-3 specific things that were lacking]
+SUGGESTIONS: [2-3 concrete actionable tips]
+IMPROVED ANSWER: [A better 3-5 sentence version using STAR method]
+
+Only output those 4 labeled sections. Nothing else.
+
+--- PROMPT ENGINEERING NOTES ---
+
+Technique: Structured output prompting + STAR method enforcement + score context injection
+The scores from the evaluator are injected as context so the feedback agent can
+tailor its response to the actual weaknesses identified (e.g. low DEPTH score
+triggers more specific advice on technical elaboration).
+The STAR method is explicitly named to ground improved answers in industry practice.
+A regex extractor with look-ahead stop patterns recovers each section reliably.
+
+--- EMPTY ANSWER HANDLING ---
+
+If answer is empty, hardcoded feedback is returned without an LLM call,
+directing the candidate to always attempt questions.
+
+================================================================================
+AGENT 4 — REPORT AGENT
+Model: llama3.2:latest (best ROUGE-L 0.50 — highest lexical quality for prose)
+File:  agents/report_agent.py
+================================================================================
+
+--- SYSTEM PROMPT ---
+
+You are a senior hiring manager writing a final interview assessment.
+Be concise, fair, and constructive.
+
+--- USER PROMPT TEMPLATE ---
+
+Write a concise 3-4 sentence professional interview summary.
+
+Role: {role} | Type: {interview_type} | Questions: {total_questions} | Tier: {tier}
+Avg: Clarity {clarity} | Relevance {relevance} | Depth {depth} | Structure {structure} | Overall {overall}/10
+
+Q1: {question_1_text} → {score_1}/10
+Q2: {question_2_text} → {score_2}/10
+... (up to 8 questions shown)
+
+Interpret scores in words. Be encouraging but honest. Do NOT list numbers — describe patterns.
+
+--- PROMPT ENGINEERING NOTES ---
+
+Technique: Role prompting + output length constraint + anti-repetition instruction
+"Do NOT list numbers" prevents the model from simply echoing the scores back.
+"Describe patterns" nudges the model toward qualitative insight (e.g. "candidate
+showed strong relevance but lacked depth on technical questions").
+LLaMA 3.2 is preferred here because benchmark showed it produces more fluent,
+cohesive narrative paragraphs compared to Gemma's tendency toward bullet points.
+
+================================================================================
+DATASET GENERATION PROMPTS
+Model: llama3.2:latest
+File:  generate_dataset.py
+================================================================================
+
+--- QUESTION GENERATION PROMPT ---
+
+You are an expert interviewer with 15 years of experience.
+
+Generate ONE {interview_type} interview question for a {role} candidate.
+Difficulty: {difficulty} ({difficulty_guide}).
+Type: {type_instruction}.
+
+Rules:
+- Output ONLY the question text
+- No numbering, no labels, no preamble
+- Be concise and professional
+- Make it realistic and commonly asked
+[Do NOT repeat any of these already-used questions:
+- {question_1}
+- {question_2} ...]  ← injected when applicable
+
+--- IDEAL ANSWER GENERATION PROMPT ---
+
+You are a senior {role} with 10+ years of experience giving a perfect interview answer.
+
+QUESTION: {question}
+
+Write an IDEAL answer for this {difficulty}-level {interview_type} interview question.
+
+Rules:
+- For HR questions: use the STAR method (Situation, Task, Action, Result)
+- For Technical questions: be precise, include examples, mention trade-offs
+- Length: 3-6 sentences
+- Output ONLY the answer — no labels, no preamble, no "Answer:" prefix
+
+--- DATASET GENERATION NOTES ---
+
+Technique: Role prompting + STAR enforcement + negative constraints + diversity injection
+120 samples generated: 10 roles × 2 types × 3 difficulties × 2 per combo.
+Diversity enforced by passing last 5 generated questions as negative examples.
+Validation filter: question must be ≥20 chars, contain "?", answer ≥40 chars.
+Duplicate detection by exact string match before adding to dataset.
+
+================================================================================
+BENCHMARK EVALUATION PROMPTS
+Model: All four models (llama, gemma, phi3, mistral) evaluated identically
+File:  benchmark/run_benchmark.py
+================================================================================
+
+--- EVALUATOR BENCHMARK SYSTEM PROMPT ---
+
+You are a strict interview evaluator. Respond ONLY in this exact format:
+CLARITY: [1-10]
+RELEVANCE: [1-10]
+DEPTH: [1-10]
+STRUCTURE: [1-10]
+EXPLANATION: [2-3 sentences]
+
+--- FEEDBACK BENCHMARK SYSTEM PROMPT ---
+
+You are a professional interview coach. Respond ONLY in this exact format:
+STRENGTHS: [what was done well]
+WEAKNESSES: [what was lacking]
+SUGGESTIONS: [actionable tips]
+IMPROVED ANSWER: [better 3-5 sentence version]
+
+--- BENCHMARK NOTES ---
+
+Each of 30 dataset samples was evaluated by all 4 models.
+Evaluator prompt repeated 3× per sample per model to measure consistency (σ).
+Identical prompts used for all models to ensure fair comparison.
+ROUGE-L computed between IMPROVED ANSWER section and dataset ideal_answer.
+Cohen's κ computed between model pairs on discretised score bins (low/mid/high).
+
+================================================================================
+END OF PROMPT DOCUMENTATION
+================================================================================

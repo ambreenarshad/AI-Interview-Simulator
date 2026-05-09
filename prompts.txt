@@ -1,67 +1,501 @@
 ================================================================================
 AI INTERVIEW SIMULATOR — PROMPT ENGINEERING DOCUMENTATION
 Course: Generative AI, SPRING 2026 | Instructor: Dr. Akhtar Jamil
-FAST National University of Computer and Emerging Sciences
+FAST National University of Computer and Emerging Sciences, Islamabad
 ================================================================================
 
-This file documents every prompt used in the AI Interview Simulator system,
-organised by agent. Each entry includes: the agent, the assigned model, the
-prompt engineering technique applied, and the full prompt text.
+This file documents ALL prompts used in this project, organised into two parts:
 
-Model assignments are justified by benchmark results (benchmark/results/summary.json):
-  - LLaMA 3.2  (llama3.2:latest) → Interviewer Agent, Report Agent
-  - Gemma 7B   (gemma:7b)        → Evaluator Agent, Feedback Agent
+  PART A — Prompts used to GENERATE code, architecture, and scripts
+            (typed into Claude / ChatGPT during development)
 
-================================================================================
-PROMPT ENGINEERING TECHNIQUES USED
-================================================================================
+  PART B — Prompts embedded INSIDE the system
+            (used by LLM agents at runtime: LLaMA 3.2 and Gemma 7B)
 
-1. STRUCTURED OUTPUT PROMPTING
-   Enforcing rigid labeled sections (CLARITY: [n], RELEVANCE: [n] ...) so that
-   regex parsers can reliably extract values without ambiguity.
-
-2. ROLE PROMPTING
-   Assigning a persona via the system prompt ("You are a strict interview
-   evaluator...") to condition the model's tone, authority, and domain focus.
-
-3. NEGATIVE CONSTRAINTS
-   Explicitly stating what NOT to do ("Only output those 5 lines. Nothing else.")
-   reduces model verbosity and format deviation — critical for parser reliability.
-
-4. FEW-SHOT FORMAT DEMONSTRATION
-   The output format itself (CLARITY: [number]\nRELEVANCE: [number]...) acts as
-   an implicit few-shot template, guiding the model without requiring examples.
-
-5. CONTEXT INJECTION
-   Passing role, difficulty, interview_type, and previous_topics dynamically
-   into prompts ensures questions remain non-repetitive and domain-relevant.
-
-6. CHAIN-OF-THOUGHT SUPPRESSION
-   For the evaluator, we suppress reasoning steps ("Nothing else.") to prevent
-   the model from adding explanatory text that breaks structured parsing.
-
-7. STAR METHOD ENFORCEMENT
-   The feedback and improved-answer prompts explicitly reference the STAR
-   (Situation, Task, Action, Result) framework, grounding behavioral feedback
-   in an industry-standard structure.
-
-8. ADAPTIVE DIFFICULTY SIGNALING
-   The difficulty parameter (easy / medium / hard) is mapped to natural-language
-   guidance strings injected into the prompt, nudging question complexity without
-   requiring fine-tuning.
+Each prompt entry includes: purpose, AI tool used, technique applied,
+and the full prompt text exactly as submitted.
 
 ================================================================================
-AGENT 1 — INTERVIEWER AGENT
-Model: llama3.2:latest (ROUGE-L 0.50, latency 35s — best generative quality)
-File:  agents/interviewer_agent.py
+PROMPT ENGINEERING TECHNIQUES DEMONSTRATED IN THIS PROJECT
 ================================================================================
 
---- SYSTEM PROMPT ---
+1.  ROLE PROMPTING              Assigning an expert persona to condition tone
+2.  STRUCTURED OUTPUT           Enforcing rigid labeled output format
+3.  NEGATIVE CONSTRAINTS        Explicitly stating what NOT to do
+4.  CONTEXT INJECTION           Dynamically inserting variables into prompts
+5.  CHAIN-OF-THOUGHT            Requesting step-by-step reasoning
+6.  CHAIN-OF-THOUGHT SUPPRESS.  Suppressing reasoning when format matters more
+7.  STAR METHOD ENFORCEMENT     Grounding answers in Situation/Task/Action/Result
+8.  ADAPTIVE DIFFICULTY         Mapping difficulty levels to natural language
+9.  DIVERSITY INJECTION         Passing previous outputs as negative examples
+10. FEW-SHOT FORMATTING         Showing the output structure as an implicit example
+11. SPECIFICITY PROMPTING       Asking for concrete details not vague generalities
+12. MULTI-PART TASK PROMPT      Breaking a complex request into numbered subtasks
+
+================================================================================
+PART A — CODE GENERATION PROMPTS
+(Prompts typed into Claude / ChatGPT to build this project)
+================================================================================
+
+--------------------------------------------------------------------------------
+PROMPT A-01
+Purpose   : Design the overall multi-agent system architecture
+Tool used : Claude (Anthropic)
+Techniques: Role prompting, Chain-of-thought, Multi-part task prompt
+--------------------------------------------------------------------------------
+
+I am building an AI-powered interview simulator for my Generative AI final
+project. The system must use a multi-agent architecture where different agents
+handle different tasks. Here are the requirements:
+
+1. The system should generate interview questions based on role, difficulty,
+   and interview type (HR, Technical, Mixed).
+2. It should evaluate candidate answers on 4 dimensions: Clarity, Relevance,
+   Depth, and Structure — each scored 1-10.
+3. It should generate actionable feedback after each answer including strengths,
+   weaknesses, suggestions, and an improved model answer using the STAR method.
+4. At the end of the session it should produce a final performance report.
+5. The system must run locally using Ollama (no cloud APIs).
+6. The backend should be FastAPI and the frontend a single HTML page.
+
+Please design the folder structure, list the agents needed, and explain what
+each agent does and why it is a separate component.
+
+WHY THIS PROMPT WORKS:
+- Numbered requirements give the model a clear checklist to address
+- Mentioning STAR, Ollama, FastAPI up front constrains the solution space
+- Asking "why it is a separate component" triggers reasoning about design
+
+--------------------------------------------------------------------------------
+PROMPT A-02
+Purpose   : Generate the FastAPI backend (main.py)
+Tool used : Claude (Anthropic)
+Techniques: Multi-part task prompt, Context injection, Specificity prompting
+--------------------------------------------------------------------------------
+
+Write a complete FastAPI backend for the AI interview simulator.
+It must have these API endpoints:
+
+POST   /api/start               — takes role, interview_type, num_questions;
+                                  returns first question
+POST   /api/submit              — takes session_id, answer; evaluates and
+                                  returns feedback + next question
+POST   /api/skip                — skips current question, records it as
+                                  skipped with score 0
+GET    /api/report/{session_id} — returns the full session report JSON
+DELETE /api/session/{session_id}— cleans up the session
+
+Requirements:
+- Sessions stored in a Python dict (no database needed)
+- Session object must track: role, interview_type, current_question,
+  question_number, total_questions, difficulty, qa_records
+- Difficulty adapts after each answer: score > 7 → hard, score < 4 → easy,
+  else medium
+- num_questions must be configurable (slider range 3-15, default 5)
+- Skipped questions get all scores set to 0 and a "skipped" flag
+- Import from agents: generate_question, evaluate_answer, generate_feedback,
+  generate_final_summary, InterviewSession, adapt_difficulty
+
+WHY THIS PROMPT WORKS:
+- Each endpoint is specified with exact signature and behaviour
+- Business rules (difficulty thresholds, skip scoring) stated explicitly
+- Import requirements prevent the model from inventing its own structure
+
+--------------------------------------------------------------------------------
+PROMPT A-03
+Purpose   : Generate the Interviewer Agent
+Tool used : Claude (Anthropic)
+Techniques: Role prompting, Structured output, Negative constraints,
+            Adaptive difficulty, Specificity prompting
+--------------------------------------------------------------------------------
+
+Write agents/interviewer_agent.py for the AI interview simulator.
+
+This agent generates one interview question per call using Ollama locally.
+Requirements:
+- Function: generate_question(role, difficulty, interview_type,
+            previous_topics, question_number)
+- System prompt should give the model a senior interviewer persona
+- The user prompt must inject role, difficulty level, interview type,
+  question number
+- Map difficulty to natural language:
+    easy   = entry-level
+    medium = moderately challenging
+    hard   = senior-level requiring deep expertise
+- Map interview_type to:
+    HR       = behavioral/situational
+    Technical= problem-solving for that role
+    Mixed    = alternate between both
+- Pass previous_topics as a "do not repeat" constraint when provided
+  (last 5 only)
+- Output ONLY the question — strip any numbering or prefix the model adds
+- Include estimate_time_limit(question, difficulty) returning 60/90/120
+  seconds for easy/medium/hard
+- Use query_ollama from utils/llm.py with role="interviewer"
+
+WHY THIS PROMPT WORKS:
+- Explicit mapping tables prevent ambiguity in difficulty/type handling
+- Negative constraint ("strip any numbering") addresses known LLM behaviour
+- estimate_time_limit spec prevents signature mismatch with main.py
+
+--------------------------------------------------------------------------------
+PROMPT A-04
+Purpose   : Generate the Evaluator Agent
+Tool used : Claude (Anthropic)
+Techniques: Structured output, Chain-of-thought suppression, Role prompting,
+            Negative constraints, Few-shot formatting
+--------------------------------------------------------------------------------
+
+Write agents/evaluator_agent.py for the AI interview simulator.
+
+This agent scores a candidate answer on 4 dimensions using Gemma 7B.
+Requirements:
+- Function: evaluate_answer(question, answer) returns dict
+- The prompt must request exactly this output format and nothing else:
+    CLARITY: [1-10]
+    RELEVANCE: [1-10]
+    DEPTH: [1-10]
+    STRUCTURE: [1-10]
+    EXPLANATION: [2-3 sentences]
+- Parse the output with regex — fallback to 5 if a field cannot be parsed
+- Compute overall as arithmetic mean of the 4 dimensions
+  (do NOT ask the LLM for overall — compute it in Python)
+- If answer is empty, return hardcoded scores of 1 across all dimensions
+  immediately without calling the LLM
+- System prompt must be strict: "You always respond in the EXACT format
+  requested. Never add extra text."
+- Use query_ollama with role="evaluator" which routes to gemma:7b
+
+WHY THIS PROMPT WORKS:
+- Showing the exact format acts as an implicit few-shot template
+- "do NOT ask the LLM for overall" prevents hallucinated average scores
+- Empty answer handling specified to avoid unnecessary API calls
+
+--------------------------------------------------------------------------------
+PROMPT A-05
+Purpose   : Generate the Feedback Agent
+Tool used : Claude (Anthropic)
+Techniques: Structured output, STAR method enforcement, Context injection,
+            Negative constraints, Role prompting
+--------------------------------------------------------------------------------
+
+Write agents/feedback_agent.py for the AI interview simulator.
+
+This agent generates structured coaching feedback using Gemma 7B.
+Requirements:
+- Function: generate_feedback(question, answer, evaluation) returns dict
+- Inject the evaluation scores into the prompt so the feedback is tailored
+  to the specific weaknesses identified
+- The prompt must request exactly this format:
+    STRENGTHS: [2-3 specific things done well]
+    WEAKNESSES: [2-3 specific things that were lacking]
+    SUGGESTIONS: [2-3 concrete actionable tips]
+    IMPROVED ANSWER: [A better 3-5 sentence version using STAR method]
+- Explicitly name the STAR method (Situation, Task, Action, Result)
+  in the prompt
+- Use a regex extractor with look-ahead stop labels to parse each section
+- If answer is empty, return hardcoded feedback telling the candidate to
+  always attempt questions — do not call the LLM
+- Use query_ollama with role="feedback" which routes to gemma:7b
+
+WHY THIS PROMPT WORKS:
+- Score context injection tailors feedback to actual weaknesses found
+- Naming STAR explicitly grounds improved answers in industry practice
+- Look-ahead regex spec prevents sections from bleeding into each other
+
+--------------------------------------------------------------------------------
+PROMPT A-06
+Purpose   : Generate the Report Agent
+Tool used : Claude (Anthropic)
+Techniques: Role prompting, Output length constraint, Anti-repetition
+            instruction, Context injection
+--------------------------------------------------------------------------------
+
+Write agents/report_agent.py for the AI interview simulator.
+
+This agent generates a final narrative summary of the full interview session.
+Requirements:
+- Function: generate_final_summary(report) returns str
+- The prompt must include: role, interview type, number of questions,
+  performance tier, average scores, and a list of up to 8 questions
+  with their scores
+- Instruct the model to write 3-4 sentences describing patterns
+- Add explicit instruction: "Do NOT list numbers — describe patterns"
+- Add: "Be encouraging but honest"
+- Use LLaMA 3.2 via query_ollama with role="report"
+- Return empty string fallback if LLM returns nothing
+
+WHY THIS PROMPT WORKS:
+- "Do NOT list numbers" prevents the model echoing scores verbatim
+- "Describe patterns" nudges qualitative synthesis over enumeration
+- Length constraint (3-4 sentences) prevents overlong summaries
+
+--------------------------------------------------------------------------------
+PROMPT A-07
+Purpose   : Generate the multi-model LLM routing layer (utils/llm.py)
+Tool used : Claude (Anthropic)
+Techniques: Specificity prompting, Multi-part task prompt
+--------------------------------------------------------------------------------
+
+Write utils/llm.py — the central LLM interface that routes agent roles
+to different Ollama models.
+
+Model assignments based on benchmark results:
+  interviewer → llama3.2:latest  (highest ROUGE-L 0.50, lowest latency 35s)
+  evaluator   → gemma:7b         (lowest consistency sigma=0.155)
+  feedback    → gemma:7b         (same — stable structured output)
+  report      → llama3.2:latest  (best narrative prose quality)
+
+Requirements:
+- Function: query_ollama(prompt, system_prompt="", role="interviewer",
+            timeout=120)
+- Use subprocess to call: ollama run --nowordwrap {model}
+- Strip ANSI escape codes from output
+- Handle: FileNotFoundError, TimeoutExpired, returncode != 0
+- Return error strings starting with "[LLM Error]" — never raise exceptions
+- Add get_model_for_role(role) helper
+- Add ROLE_MODEL_MAP dict and MODEL_* constants
+
+WHY THIS PROMPT WORKS:
+- Benchmark numbers given upfront justify model choices in the code comments
+- Error handling requirements prevent silent failures in the app
+- Explicit return-not-raise convention prevents breaking the FastAPI server
+
+--------------------------------------------------------------------------------
+PROMPT A-08
+Purpose   : Generate the dataset creation script
+Tool used : Claude (Anthropic)
+Techniques: Chain-of-thought, Multi-part task, Diversity injection,
+            STAR enforcement, Specificity prompting
+--------------------------------------------------------------------------------
+
+Write generate_dataset.py that creates a custom interview Q&A dataset
+using Ollama locally. The dataset will be used for benchmarking 4 LLMs.
+
+Requirements:
+- Generate: 10 roles x 2 types (HR, Technical) x 3 difficulties x 2 = 120 samples
+- Roles: Software Engineer, Data Scientist, ML Engineer, Frontend Developer,
+  Backend Developer, DevOps Engineer, Product Manager, UX Designer,
+  Data Analyst, Cybersecurity Analyst
+- Two-stage pipeline per sample:
+    Stage 1: Generate question (LLaMA 3.2)
+    Stage 2: Generate ideal reference answer (LLaMA 3.2)
+- For HR ideal answers: enforce STAR method in the prompt
+- For Technical ideal answers: require precision, examples, trade-offs
+- Diversity: pass last 5 questions per combo as "do not repeat" list
+- Validation: question >= 20 chars, contains "?", answer >= 40 chars
+- Duplicate detection by exact string match
+- Resume support: save progress after each entry to _progress.json
+- Save to data/processed/interview_dataset.json
+- Save stats to dataset_stats.json
+- Print live progress with ETA
+
+WHY THIS PROMPT WORKS:
+- Exact maths (10x2x3x2=120) prevents the model from guessing the scope
+- Two-stage pipeline described explicitly ensures quality reference answers
+- Resume support spec prevents hours of work being lost on interruption
+
+--------------------------------------------------------------------------------
+PROMPT A-09
+Purpose   : Generate the benchmark runner
+Tool used : Claude (Anthropic)
+Techniques: Chain-of-thought, Multi-part task, Specificity prompting
+--------------------------------------------------------------------------------
+
+Write benchmark/run_benchmark.py that compares 4 LLMs on our dataset.
+
+Models: llama3.2:latest, gemma:7b, phi3:latest, mistral:latest
+
+Metrics:
+  1. ROUGE-L F1 — between IMPROVED ANSWER section and dataset ideal_answer
+  2. Score consistency sigma — std-dev of overall scores across 3 repeated runs
+  3. Inference latency — wall-clock seconds per evaluator call
+  4. Inter-model agreement — Cohen's weighted kappa between model pairs
+     (bins: low=1-3, medium=4-7, high=8-10)
+
+Requirements:
+- Sample 30 entries stratified by difficulty (10 per level)
+- For each sample x model: run evaluator prompt + feedback prompt
+- Repeat evaluator 3 times for consistency measurement
+- Save raw_results.json, summary.json, kappa.json on completion
+- Resume support via _progress.json
+- Print live progress with ETA
+- Print final summary table
+
+WHY THIS PROMPT WORKS:
+- Metric definitions given precisely (e.g. exact bin boundaries for kappa)
+- Repeat count (3) specified to enable reproducibility
+- Output file names specified to match what downstream scripts expect
+
+--------------------------------------------------------------------------------
+PROMPT A-10
+Purpose   : Generate the visualisation script
+Tool used : Claude (Anthropic)
+Techniques: Specificity prompting, Multi-part task
+--------------------------------------------------------------------------------
+
+Write benchmark/generate_plots.py that reads benchmark JSON results and
+generates 7 publication-quality plots for the research paper.
+
+Plots:
+  1. bar_comparison.png      — ROUGE-L and latency side by side, all 4 models
+  2. rouge_by_difficulty.png — grouped bar: ROUGE-L per difficulty per model
+  3. latency_vs_quality.png  — scatter: latency (x) vs ROUGE-L (y)
+  4. score_distribution.png  — box plots of overall scores per model
+  5. consistency.png         — bar chart of mean sigma per model
+  6. kappa_heatmap.png       — 4x4 heatmap of Cohen's kappa between all pairs
+  7. score_trend.png         — line chart of scores across 30 samples
+
+Requirements:
+- Read from benchmark/results/ (raw_results.json, summary.json, kappa.json)
+- matplotlib Agg backend (headless)
+- Colours: llama=#4f8ef7, gemma=#2dd4a0, phi3=#f7b94f, mistral=#a78bfa
+- DPI=150, tight_layout, save to benchmark/results/plots/
+- Generate latex_tables.txt with ready-to-paste LaTeX table code
+- Print corrected metric values for updating the paper
+
+WHY THIS PROMPT WORKS:
+- Exact hex colours ensure visual consistency across all 7 plots
+- Specifying Agg backend prevents crashes on headless Windows/Linux
+- Requesting latex_tables.txt removes manual transcription of results
+
+--------------------------------------------------------------------------------
+PROMPT A-11
+Purpose   : Generate Dockerfile and docker-compose.yml
+Tool used : Claude (Anthropic)
+Techniques: Specificity prompting, Multi-part task
+--------------------------------------------------------------------------------
+
+Write a Dockerfile and docker-compose.yml to containerise the AI interview
+simulator.
+
+Architecture: two containers — FastAPI app + Ollama LLM server.
+They communicate internally: app calls ollama at http://ollama:11434.
+Ollama model weights must persist in a named Docker volume.
+Dataset and benchmark results persist via bind mounts.
+
+Dockerfile:
+- Base: python:3.11-slim
+- Install requirements.txt
+- ENV PYTHONDONTWRITEBYTECODE=1, PYTHONUNBUFFERED=1
+- ENV OLLAMA_HOST pointing to ollama service
+- EXPOSE 8000
+- CMD: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+- HEALTHCHECK using curl
+
+docker-compose.yml:
+- ollama/ollama:latest image for LLM service
+- app depends_on ollama with condition: service_healthy
+- Both services restart: unless-stopped
+- Include startup instructions as comments
+
+WHY THIS PROMPT WORKS:
+- Named volume for models prevents re-downloading on container restart
+- Health check dependency ensures app doesn't start before Ollama is ready
+- Bind mounts for data/benchmark preserve results between deployments
+
+--------------------------------------------------------------------------------
+PROMPT A-12
+Purpose   : Generate the complete Springer LNCS research paper
+Tool used : Claude (Anthropic)
+Techniques: Role prompting, Multi-part task, Context injection,
+            Specificity prompting, Structured output
+--------------------------------------------------------------------------------
+
+Write a complete research paper in Springer LNCS LaTeX format.
+
+Project: AI Interview Simulator — multi-agent LLM architecture
+Authors: Athaar Naqvi, Ambreen Arshad, Fiza Wajid — FAST NUCES Islamabad
+Course: Generative AI Spring 2026, Dr. Akhtar Jamil
+
+Real benchmark results (from our actual 439-minute benchmark run):
+  LLaMA 3.2  — ROUGE-L:0.5011, Latency:35.3s, sigma:0.3240, kappa vs gemma:0.967
+  Gemma 7B   — ROUGE-L:0.4505, Latency:23.4s, sigma:0.1551, kappa vs llama:0.967
+  Phi-3      — ROUGE-L:0.1070, Latency:69.0s, sigma:0.7627, kappa vs llama:0.300
+  Mistral 7B — ROUGE-L:0.2756, Latency:93.8s, sigma:0.2965
+
+Per-difficulty ROUGE-L:
+  LLaMA:   easy=0.5232, medium=0.4995, hard=0.4807
+  Gemma:   easy=0.4844, medium=0.4659, hard=0.4011
+  Phi-3:   easy=0.2032, medium=0.0844, hard=0.0333
+  Mistral: easy=0.3035, medium=0.1910, hard=0.3323
+
+Required sections:
+  Abstract (150-200 words)
+  Introduction (4 numbered contributions)
+  Related Work (cite 12+ real papers with discussion of each)
+  Dataset Construction (with math equations for N=120)
+  Methodology (scoring formula + adaptive difficulty formula + 8 prompt techniques)
+  Experimental Setup and Results (2 tables using real numbers above)
+  Discussion and Limitations
+  Conclusion (different from abstract)
+
+Central argument: model assignment is benchmark-driven, not arbitrary.
+LLaMA → generative tasks (best ROUGE-L). Gemma → evaluation tasks (best sigma).
+Phi-3 and Mistral excluded due to timeouts and instability.
+Use booktabs for tables. Cite real papers with proper bibitem entries.
+
+WHY THIS PROMPT WORKS:
+- Providing actual numbers prevents the model from generating placeholder values
+- Listing required sections maps directly to the rubric structure
+- Central argument stated explicitly ensures the paper has a clear thesis
+
+--------------------------------------------------------------------------------
+PROMPT A-13
+Purpose   : Debug ImportError for estimate_time_limit
+Tool used : Claude (Anthropic)
+Techniques: Specificity prompting (error-driven debugging)
+--------------------------------------------------------------------------------
+
+My FastAPI app crashes with:
+  ImportError: cannot import name 'estimate_time_limit'
+  from 'agents.interviewer_agent'
+
+main.py line:
+  from agents.interviewer_agent import generate_question, estimate_time_limit
+
+It calls it as:
+  time_limit = estimate_time_limit(question, "medium")
+
+The function was missing. Please add estimate_time_limit to
+interviewer_agent.py. Requirements:
+- Accept two arguments: question text (ignored) and difficulty string
+- Also work when called with just one argument (the difficulty alone)
+- Return 60 for easy, 90 for medium, 120 for hard
+
+WHY THIS PROMPT WORKS:
+- Exact error message given so model knows exactly what is missing
+- Exact call signature from main.py provided — prevents signature mismatch
+- Two-argument and one-argument case both specified for robustness
+
+================================================================================
+PART B — IN-SYSTEM PROMPTS
+(Embedded in agents, submitted to LLaMA 3.2 / Gemma 7B at runtime)
+================================================================================
+
+These prompts are constructed by Python code and sent to Ollama automatically
+each time a user interacts with the simulator. They are not typed by users.
+
+--------------------------------------------------------------------------------
+PROMPT B-01 — INTERVIEWER AGENT SYSTEM PROMPT
+Model   : LLaMA 3.2 (llama3.2:latest)
+File    : agents/interviewer_agent.py
+Technique: Role prompting
+--------------------------------------------------------------------------------
 
 You are an expert interviewer with 15+ years of experience.
 You ask clear, targeted, and professionally relevant questions.
 
---- USER PROMPT TEMPLATE ---
+EFFECT: Conditions the model to produce professional, domain-appropriate
+questions rather than generic or casual ones.
+
+--------------------------------------------------------------------------------
+PROMPT B-02 — INTERVIEWER AGENT USER PROMPT
+Model   : LLaMA 3.2 (llama3.2:latest)
+File    : agents/interviewer_agent.py
+Technique: Context injection, adaptive difficulty, negative constraints,
+           diversity injection
+--------------------------------------------------------------------------------
 
 Generate ONE interview question for this context:
 
@@ -73,38 +507,41 @@ Rules:
 - {difficulty_guide}
 - Output ONLY the question — no numbering, no preamble, no explanation.
 - Be concise and conversational.
-[DO NOT repeat these already-covered topics: {previous_topics}]  ← injected when applicable
+[DO NOT repeat these already-covered topics: {previous_topics}]
 
---- TYPE INSTRUCTION VALUES ---
+type_instruction values:
+  HR        → Ask a behavioral, situational, or cultural fit question.
+  Technical → Ask a technical, problem-solving question for a {role}.
+  Mixed     → Alternate between behavioral and technical questions.
 
-HR:        "Ask a behavioral, situational, or cultural fit question."
-Technical: "Ask a technical, problem-solving question for a {role}."
-Mixed:     "Alternate between behavioral and technical questions."
+difficulty_guide values:
+  easy   → Make it entry-level and straightforward.
+  medium → Make it moderately challenging, requiring real experience.
+  hard   → Make it senior-level, requiring deep expertise.
 
---- DIFFICULTY GUIDE VALUES ---
+EFFECT: Dynamic injection of role/difficulty/type produces non-repetitive,
+contextually appropriate questions. Diversity injection prevents duplicate topics.
 
-easy:   "Make it entry-level and straightforward."
-medium: "Make it moderately challenging, requiring real experience."
-hard:   "Make it senior-level, requiring deep expertise."
+--------------------------------------------------------------------------------
+PROMPT B-03 — EVALUATOR AGENT SYSTEM PROMPT
+Model   : Gemma 7B (gemma:7b)
+File    : agents/evaluator_agent.py
+Technique: Role prompting, structured output, chain-of-thought suppression
+--------------------------------------------------------------------------------
 
---- PROMPT ENGINEERING NOTES ---
+You are a strict interview evaluator. You always respond in the EXACT format
+requested. Never add extra text, explanations outside the format, or commentary.
 
-Technique: Role prompting + context injection + negative constraints + adaptive difficulty
-The previous_topics list (last 5 questions) is injected to enforce diversity.
-Output stripping removes common LLM prefixes ("Q:", "1.", "-") post-hoc.
+EFFECT: Gemma 7B chosen for this role because benchmark showed sigma=0.155
+(lowest variance across 3 repeated runs) — the most consistent scorer.
 
-================================================================================
-AGENT 2 — EVALUATOR AGENT
-Model: gemma:7b (consistency σ=0.155 — most stable scorer in benchmark)
-File:  agents/evaluator_agent.py
-================================================================================
-
---- SYSTEM PROMPT ---
-
-You are a strict interview evaluator. You always respond in the EXACT format requested.
-Never add extra text, explanations outside the format, or commentary.
-
---- USER PROMPT TEMPLATE ---
+--------------------------------------------------------------------------------
+PROMPT B-04 — EVALUATOR AGENT USER PROMPT
+Model   : Gemma 7B (gemma:7b)
+File    : agents/evaluator_agent.py
+Technique: Structured output, few-shot formatting, negative constraints,
+           chain-of-thought suppression
+--------------------------------------------------------------------------------
 
 Evaluate this interview answer strictly.
 
@@ -122,109 +559,101 @@ EXPLANATION: [2-3 sentences about what was done well and what was lacking]
 
 Only output those 5 lines. Nothing else.
 
---- SCORING DIMENSIONS ---
+Scoring guide:
+  CLARITY   — How clearly the candidate communicated
+  RELEVANCE — How directly the answer addressed the question
+  DEPTH     — Depth of knowledge and specificity of examples
+  STRUCTURE — Logical flow and use of frameworks like STAR
 
-CLARITY:   How clearly the candidate communicated their answer (1-10)
-RELEVANCE: How directly the answer addressed the question asked (1-10)
-DEPTH:     Depth of knowledge, specificity of examples, technical detail (1-10)
-STRUCTURE: Logical flow, organisation, use of frameworks like STAR (1-10)
-OVERALL:   Computed as arithmetic mean of the four dimensions (not LLM-generated)
+EFFECT: The format acts as an implicit few-shot template. "Only those 5 lines"
+suppresses chain-of-thought reasoning that would break regex parsing.
 
---- PROMPT ENGINEERING NOTES ---
-
-Technique: Structured output prompting + role prompting + chain-of-thought suppression
-Gemma selected because benchmark showed σ=0.155 (lowest variance across 3 repeated
-runs per sample), meaning it assigns the most consistent scores across identical inputs.
-The format is enforced twice ("EXACTLY this format" + "Only output those 5 lines")
-because Gemma occasionally adds preamble without the double constraint.
-
---- EMPTY ANSWER HANDLING ---
-
-If answer is empty or whitespace, a hardcoded result is returned immediately
-without calling the LLM: clarity=1, relevance=1, depth=1, structure=1, overall=1.0.
-
-================================================================================
-AGENT 3 — FEEDBACK AGENT
-Model: gemma:7b (same justification as evaluator — stable structured output)
-File:  agents/feedback_agent.py
-================================================================================
-
---- SYSTEM PROMPT ---
+--------------------------------------------------------------------------------
+PROMPT B-05 — FEEDBACK AGENT SYSTEM PROMPT
+Model   : Gemma 7B (gemma:7b)
+File    : agents/feedback_agent.py
+Technique: Role prompting, structured output
+--------------------------------------------------------------------------------
 
 You are a professional interview coach. You give specific, actionable feedback.
 Always respond in the EXACT format requested — no extra text.
 
---- USER PROMPT TEMPLATE ---
+EFFECT: Coach persona encourages constructive, growth-oriented language rather
+than purely critical assessment.
+
+--------------------------------------------------------------------------------
+PROMPT B-06 — FEEDBACK AGENT USER PROMPT
+Model   : Gemma 7B (gemma:7b)
+File    : agents/feedback_agent.py
+Technique: Structured output, STAR enforcement, score context injection,
+           negative constraints, specificity prompting
+--------------------------------------------------------------------------------
 
 Review this interview answer and give feedback.
 
 QUESTION: {question}
 ANSWER: {answer}
-SCORES: Clarity {clarity}/10, Relevance {relevance}/10, Depth {depth}/10, Structure {structure}/10
+SCORES: Clarity {clarity}/10, Relevance {relevance}/10, Depth {depth}/10,
+        Structure {structure}/10
 
 Respond in EXACTLY this format:
 
 STRENGTHS: [2-3 specific things done well]
 WEAKNESSES: [2-3 specific things that were lacking]
 SUGGESTIONS: [2-3 concrete actionable tips]
-IMPROVED ANSWER: [A better 3-5 sentence version using STAR method]
+IMPROVED ANSWER: [A better 3-5 sentence version using STAR method
+                  (Situation, Task, Action, Result)]
 
 Only output those 4 labeled sections. Nothing else.
 
---- PROMPT ENGINEERING NOTES ---
+EFFECT: Injecting scores from the evaluator allows feedback to target actual
+weaknesses. A low DEPTH score triggers deeper elaboration advice. STAR
+enforcement grounds the improved answer in industry-standard structure.
 
-Technique: Structured output prompting + STAR method enforcement + score context injection
-The scores from the evaluator are injected as context so the feedback agent can
-tailor its response to the actual weaknesses identified (e.g. low DEPTH score
-triggers more specific advice on technical elaboration).
-The STAR method is explicitly named to ground improved answers in industry practice.
-A regex extractor with look-ahead stop patterns recovers each section reliably.
-
---- EMPTY ANSWER HANDLING ---
-
-If answer is empty, hardcoded feedback is returned without an LLM call,
-directing the candidate to always attempt questions.
-
-================================================================================
-AGENT 4 — REPORT AGENT
-Model: llama3.2:latest (best ROUGE-L 0.50 — highest lexical quality for prose)
-File:  agents/report_agent.py
-================================================================================
-
---- SYSTEM PROMPT ---
+--------------------------------------------------------------------------------
+PROMPT B-07 — REPORT AGENT SYSTEM PROMPT
+Model   : LLaMA 3.2 (llama3.2:latest)
+File    : agents/report_agent.py
+Technique: Role prompting
+--------------------------------------------------------------------------------
 
 You are a senior hiring manager writing a final interview assessment.
 Be concise, fair, and constructive.
 
---- USER PROMPT TEMPLATE ---
+EFFECT: Hiring manager persona produces realistic, professional summaries
+appropriate for a genuine post-interview debrief.
+
+--------------------------------------------------------------------------------
+PROMPT B-08 — REPORT AGENT USER PROMPT
+Model   : LLaMA 3.2 (llama3.2:latest)
+File    : agents/report_agent.py
+Technique: Context injection, output length constraint, anti-repetition
+--------------------------------------------------------------------------------
 
 Write a concise 3-4 sentence professional interview summary.
 
 Role: {role} | Type: {interview_type} | Questions: {total_questions} | Tier: {tier}
-Avg: Clarity {clarity} | Relevance {relevance} | Depth {depth} | Structure {structure} | Overall {overall}/10
+Avg: Clarity {clarity} | Relevance {relevance} | Depth {depth} |
+     Structure {structure} | Overall {overall}/10
 
-Q1: {question_1_text} → {score_1}/10
-Q2: {question_2_text} → {score_2}/10
-... (up to 8 questions shown)
+Q1: {question_1} → {score_1}/10
+Q2: {question_2} → {score_2}/10
+... (up to 8 questions)
 
-Interpret scores in words. Be encouraging but honest. Do NOT list numbers — describe patterns.
+Interpret scores in words. Be encouraging but honest.
+Do NOT list numbers — describe patterns.
 
---- PROMPT ENGINEERING NOTES ---
+EFFECT: "Do NOT list numbers" prevents the model from echoing scores verbatim.
+"Describe patterns" nudges qualitative synthesis: e.g. "strong in relevance
+but lacked technical depth on hard questions."
 
-Technique: Role prompting + output length constraint + anti-repetition instruction
-"Do NOT list numbers" prevents the model from simply echoing the scores back.
-"Describe patterns" nudges the model toward qualitative insight (e.g. "candidate
-showed strong relevance but lacked depth on technical questions").
-LLaMA 3.2 is preferred here because benchmark showed it produces more fluent,
-cohesive narrative paragraphs compared to Gemma's tendency toward bullet points.
-
-================================================================================
-DATASET GENERATION PROMPTS
-Model: llama3.2:latest
-File:  generate_dataset.py
-================================================================================
-
---- QUESTION GENERATION PROMPT ---
+--------------------------------------------------------------------------------
+PROMPT B-09 — DATASET QUESTION GENERATION PROMPT
+Model   : LLaMA 3.2 (llama3.2:latest)
+File    : generate_dataset.py
+Technique: Role prompting, adaptive difficulty, diversity injection,
+           negative constraints
+--------------------------------------------------------------------------------
 
 You are an expert interviewer with 15 years of experience.
 
@@ -237,17 +666,29 @@ Rules:
 - No numbering, no labels, no preamble
 - Be concise and professional
 - Make it realistic and commonly asked
-[Do NOT repeat any of these already-used questions:
-- {question_1}
-- {question_2} ...]  ← injected when applicable
 
---- IDEAL ANSWER GENERATION PROMPT ---
+Do NOT repeat any of these already-used questions:
+- {previous_question_1}
+- {previous_question_2}
+...
 
-You are a senior {role} with 10+ years of experience giving a perfect interview answer.
+EFFECT: Diversity injection by passing last 5 questions ensures the 120-sample
+dataset covers a wide range of topics without repetition across combos.
+
+--------------------------------------------------------------------------------
+PROMPT B-10 — DATASET IDEAL ANSWER GENERATION PROMPT
+Model   : LLaMA 3.2 (llama3.2:latest)
+File    : generate_dataset.py
+Technique: Role prompting, STAR enforcement, negative constraints,
+           output length constraint
+--------------------------------------------------------------------------------
+
+You are a senior {role} with 10+ years of experience giving a perfect
+interview answer.
 
 QUESTION: {question}
 
-Write an IDEAL answer for this {difficulty}-level {interview_type} interview question.
+Write an IDEAL answer for this {difficulty}-level {interview_type} question.
 
 Rules:
 - For HR questions: use the STAR method (Situation, Task, Action, Result)
@@ -255,21 +696,16 @@ Rules:
 - Length: 3-6 sentences
 - Output ONLY the answer — no labels, no preamble, no "Answer:" prefix
 
---- DATASET GENERATION NOTES ---
+EFFECT: These ideal answers serve as reference strings for ROUGE-L and
+BERTScore computation during the benchmark, so their quality directly
+determines the validity of the evaluation metrics.
 
-Technique: Role prompting + STAR enforcement + negative constraints + diversity injection
-120 samples generated: 10 roles × 2 types × 3 difficulties × 2 per combo.
-Diversity enforced by passing last 5 generated questions as negative examples.
-Validation filter: question must be ≥20 chars, contain "?", answer ≥40 chars.
-Duplicate detection by exact string match before adding to dataset.
-
-================================================================================
-BENCHMARK EVALUATION PROMPTS
-Model: All four models (llama, gemma, phi3, mistral) evaluated identically
-File:  benchmark/run_benchmark.py
-================================================================================
-
---- EVALUATOR BENCHMARK SYSTEM PROMPT ---
+--------------------------------------------------------------------------------
+PROMPT B-11 — BENCHMARK EVALUATOR SYSTEM PROMPT
+Model   : All 4 models tested identically
+File    : benchmark/run_benchmark.py
+Technique: Structured output, chain-of-thought suppression
+--------------------------------------------------------------------------------
 
 You are a strict interview evaluator. Respond ONLY in this exact format:
 CLARITY: [1-10]
@@ -278,21 +714,47 @@ DEPTH: [1-10]
 STRUCTURE: [1-10]
 EXPLANATION: [2-3 sentences]
 
---- FEEDBACK BENCHMARK SYSTEM PROMPT ---
+EFFECT: Identical prompt used for all 4 models ensures fair comparison.
+Any format deviation from a model is captured in its parse-failure rate.
+
+--------------------------------------------------------------------------------
+PROMPT B-12 — BENCHMARK FEEDBACK SYSTEM PROMPT
+Model   : All 4 models tested identically
+File    : benchmark/run_benchmark.py
+Technique: Structured output, STAR method enforcement
+--------------------------------------------------------------------------------
 
 You are a professional interview coach. Respond ONLY in this exact format:
 STRENGTHS: [what was done well]
 WEAKNESSES: [what was lacking]
 SUGGESTIONS: [actionable tips]
-IMPROVED ANSWER: [better 3-5 sentence version]
+IMPROVED ANSWER: [better 3-5 sentence version using STAR method]
 
---- BENCHMARK NOTES ---
+EFFECT: The IMPROVED ANSWER section is extracted and compared against
+the dataset ideal_answer using ROUGE-L to measure lexical quality.
+Gemma 7B produced the highest ROUGE-L (0.4505) under this prompt.
 
-Each of 30 dataset samples was evaluated by all 4 models.
-Evaluator prompt repeated 3× per sample per model to measure consistency (σ).
-Identical prompts used for all models to ensure fair comparison.
-ROUGE-L computed between IMPROVED ANSWER section and dataset ideal_answer.
-Cohen's κ computed between model pairs on discretised score bins (low/mid/high).
+================================================================================
+SUMMARY TABLE — TECHNIQUE COVERAGE PER PROMPT
+================================================================================
+
+Technique                  | Part A Prompts          | Part B Prompts
+---------------------------+-------------------------+-------------------------
+Role Prompting             | A01,A03,A04,A05,A06,A12 | B01,B03,B05,B07,B09,B10
+Structured Output          | A04,A05,A12             | B04,B06,B11,B12
+Negative Constraints       | A03,A04,A05,A08         | B02,B04,B06,B09,B10
+Context Injection          | A02,A06,A12             | B02,B04,B06,B08
+Chain-of-Thought           | A01,A08,A09             | —
+CoT Suppression            | A04                     | B03,B04,B11
+STAR Enforcement           | A05,A08,A12             | B06,B10,B12
+Adaptive Difficulty        | A03,A08                 | B02,B09
+Diversity Injection        | A03,A08                 | B02,B09
+Few-Shot Formatting        | A04                     | B04
+Specificity Prompting      | A02,A03,A07,A10,A11     | B04
+Multi-Part Task            | A01,A02,A08,A09,A10,A11 | —
+
+Total prompts documented   : 25 (13 code generation + 12 in-system)
+Total techniques applied   : 12
 
 ================================================================================
 END OF PROMPT DOCUMENTATION

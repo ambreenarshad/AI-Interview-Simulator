@@ -27,6 +27,11 @@ Then open: **http://localhost:8000**
 
 ---
 
+## Dockerization
+open local host app using http://localhost:8000/
+check ollama status using http://localhost:11434/
+
+
 ## 📁 Project Structure
 
 ```

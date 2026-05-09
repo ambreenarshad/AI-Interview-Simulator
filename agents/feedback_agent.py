@@ -3,7 +3,7 @@ feedback_agent.py — Generates actionable feedback for each answer
 """
 
 import re
-from utils.llm import query_ollama
+from utils.llm import query_feedback 
 
 SYSTEM_PROMPT = """You are a professional interview coach. You give specific, actionable feedback.
 Always respond in the EXACT format requested — no extra text."""
@@ -39,7 +39,7 @@ IMPROVED ANSWER: [A better 3-5 sentence version using STAR method]
 
 Only output those 4 labeled sections. Nothing else."""
 
-    raw = query_ollama(prompt, SYSTEM_PROMPT)
+    raw = query_feedback(prompt, SYSTEM_PROMPT)
     return _parse_feedback(raw)
 
 
